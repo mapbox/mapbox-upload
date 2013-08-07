@@ -1,0 +1,15 @@
+{
+    "name": "mapbox-upload",
+    "version": "0.0.0",
+    "main": "./index.js",
+    "description": "Integration with MapBox upload API.",
+    "repository": {
+        "type": "git",
+        "url": "git://github.com/mapbox/mapbox-upload.git"
+    },
+    "licenses": [{ "type": "BSD" }],
+    "dependencies": {
+        "request": "2.25.x"
+    },
+    "engines": { "node": "0.6.x || 0.8.x || 0.10.x" }
+}
