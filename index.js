@@ -7,10 +7,7 @@ var http = require('http');
 var url = require('url');
 var fs = require('fs');
 
-var MAPBOX = 'https://tiles.mapbox.com';
-
-module.exports = {};
-module.exports.upload = upload;
+module.exports = upload;
 
 // Returns a task eventEmitter immediately.
 function upload(opts, callback) {
@@ -34,11 +31,12 @@ function upload(opts, callback) {
         task.emit('end');
     });
 };
+upload.MAPBOX = 'https://tiles.mapbox.com';
 
 upload.opts = function(opts) {
     opts = opts || {};
     opts.proxy = opts.proxy || process.env.HTTP_PROXY;
-    opts.mapbox = opts.mapbox || MAPBOX;
+    opts.mapbox = opts.mapbox || upload.MAPBOX;
     if (!opts.file)
         throw new Error('"file" option required');
     if (!opts.account)
@@ -71,8 +69,12 @@ upload.getcreds = function(opts, task, callback) {
         if (err) return upload.error(err, task, callback);
         try {
             var creds = JSON.parse(body);
-            task.emit('creds', creds);
-            return callback && callback(null, creds);
+            if (!creds.key || !creds.bucket) {
+                return upload.error(new Error('Invalid creds'), task, callback);
+            } else {
+                task.emit('creds', creds);
+                return callback && callback(null, creds);
+            }
         } catch(err) { return upload.error(err, task, callback) }
     });
 };
