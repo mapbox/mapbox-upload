@@ -137,7 +137,7 @@ upload.putfile = function(opts, creds, task, callback) {
             var done = function(err) {
                 if (err) {
                     return upload.error(err, task, callback);
-                } else if (resp.statusCode !== 303) {
+                } else if ([201, 204, 303].indexOf(resp.statusCode) === -1) {
                     var parsed = _({
                         code:     new RegExp('[^>]+(?=<\\/Code>)', 'g'),
                         message:  new RegExp('[^>]+(?=<\\/Message>)', 'g')
