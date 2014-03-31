@@ -1,21 +1,28 @@
 {
-    "name": "mapbox-upload",
-    "version": "0.0.1",
-    "main": "./index.js",
-    "description": "Integration with MapBox upload API.",
-    "repository": {
-        "type": "git",
-        "url": "git://github.com/mapbox/mapbox-upload.git"
-    },
-    "licenses": [{ "type": "BSD" }],
-    "dependencies": {
-        "request": "2.25.x"
-    },
-    "devDependencies": {
-        "mocha": "1.12.x"
-    },
-    "scripts": {
-        "test": "mocha -R spec"
-    },
-    "engines": { "node": "0.6.x || 0.8.x || 0.10.x" }
+  "name": "mapbox-upload",
+  "version": "0.0.1",
+  "main": "./index.js",
+  "description": "Integration with MapBox upload API.",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/mapbox/mapbox-upload.git"
+  },
+  "licenses": [
+    {
+      "type": "BSD"
+    }
+  ],
+  "dependencies": {
+    "request": "2.25.x",
+    "underscore": "^1.6.0"
+  },
+  "devDependencies": {
+    "mocha": "1.12.x"
+  },
+  "scripts": {
+    "test": "mocha -R spec"
+  },
+  "engines": {
+    "node": "0.6.x || 0.8.x || 0.10.x"
+  }
 }
