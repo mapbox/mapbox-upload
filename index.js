@@ -138,11 +138,11 @@ upload.putfile = function(opts, creds, task, callback) {
                 if (err) {
                     return upload.error(err, task, callback);
                 } else if ([200, 201, 204, 303].indexOf(resp.statusCode) === -1) {
-                    var parsed = _({
-                        code:     new RegExp('[^>]+(?=<\\/Code>)', 'g'),
-                        message:  new RegExp('[^>]+(?=<\\/Message>)', 'g')
-                    }).reduce(function(memo, pattern, key) {
-                        memo[key] = data.match(pattern) || [];
+                    var parsed = [
+                        {key:'code', pattern:new RegExp('[^>]+(?=<\\/Code>)', 'g')},
+                        {key:'message', pattern:new RegExp('[^>]+(?=<\\/Message>)', 'g')}
+                    ].reduce(function(memo, pair) {
+                        memo[pair.key] = data.match(pair.pattern) || [];
                         return memo;
                     }, {});
                     var message = 'Error: S3 upload failed. Status: ' + resp.statusCode;

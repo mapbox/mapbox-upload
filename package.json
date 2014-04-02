@@ -13,8 +13,7 @@
     }
   ],
   "dependencies": {
-    "request": "2.25.x",
-    "underscore": "^1.6.0"
+    "request": "2.25.x"
   },
   "devDependencies": {
     "mocha": "1.12.x"
