@@ -104,7 +104,7 @@ describe('upload.getcreds', function() {
     });
     it('failed req', function(done) {
         function cb(err, creds) {
-            assert.equal('getaddrinfo ENOENT', err.message);
+            assert.equal('getaddrinfo ENOTFOUND', err.message);
             done && done() || (done = false);
         };
         var task = new events.EventEmitter();
