@@ -29,7 +29,7 @@ npm install --save mapbox-upload
 
 ## Usage
 
-```
+```javascript
 var upload = require('mapbox-upload');
 
 upload({
@@ -45,6 +45,7 @@ upload({
     });
 
 });
+```
 
 ## Tests
 
