@@ -1,6 +1,6 @@
 mapbox-upload
 -------------
-Library for interfacing with the MapBox upload API.
+Library for interfacing with the Mapbox upload API.
 
 ## Disclaimer
 
@@ -13,7 +13,7 @@ This software uses a private Mapbox API so:
 ## Authentication
 
 A Mapbox API token is required for authentication. Generate a **secret** token
-with the **Map write** scope enabled by following
+with the **map write** scope enabled by following
 [these steps](https://www.mapbox.com/help/create-api-access-token/). You can
 test the token by making a request like:
 
@@ -41,7 +41,7 @@ upload({
     if (err) throw err;
 
     task.once('end', function() {
-        // Upload has completed but likely queued for processing and not necessarily available on Mapbox.
+        // Upload has completed but is likely queued for processing and not yet available on Mapbox.
     });
 
 });
