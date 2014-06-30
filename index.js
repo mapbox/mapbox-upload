@@ -6,17 +6,23 @@ var path = require('path');
 var http = require('http');
 var url = require('url');
 var fs = require('fs');
+var stream = require('stream');
 
 module.exports = upload;
 
 // Returns a task eventEmitter immediately.
 function upload(opts, callback) {
     callback = callback || function(){};
-    var task = new events.EventEmitter();
-
     try { opts = upload.opts(opts) }
     catch(err) { return callback(err) }
+
+    var task = fs.createReadStream(opts.file);
     callback(null, task);
+
+    fs.stat(opts.file, function(err, data){
+        task.emit('length', data.size);
+        task.length = data.size;
+    });
 
     upload.getcreds(opts, task);
     var creds;
@@ -163,7 +169,7 @@ upload.putfile = function(opts, creds, task, callback) {
         // Set up read for file and start the upload.
         var bytesWritten = 0;
         var updated = +new Date;
-        fs.createReadStream(opts.file)
+        task
             .on('data', function(chunk) {
                 bytesWritten += chunk.length;
                 if (+new Date > updated + 1000) task.emit('progress', {
