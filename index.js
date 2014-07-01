@@ -13,20 +13,16 @@ module.exports = upload;
 // Returns a task eventEmitter immediately.
 function upload(opts, callback) {
     callback = callback || function(){};
-    // if task is set to a readstream,
-    // map doesn't make it to s3
-    // var task = fs.createReadStream(opts.file);
-
-    var task = new events.EventEmitter();
+    var task = fs.createReadStream(opts.file);
 
     try { opts = upload.opts(opts) }
     catch(err) { return callback(err) }
     callback(null, task);
 
-    // fs.stat(opts.file, function(err, data){
-    //     task.emit('length', data.size);
-    //     task.length = data.size;
-    // });
+    fs.stat(opts.file, function(err, data){
+        task.emit('length', data.size);
+        task.length = data.size;
+    });
 
     upload.getcreds(opts, task);
     var creds;
@@ -172,15 +168,11 @@ upload.putfile = function(opts, creds, task, callback) {
 
         // Set up read for file and start the upload.
         var prog = progress({
-            // objectMode: true,
             time: 300,
-            length: stat.size
         });
-        // task
-        fs.createReadStream(opts.file)
-            .on('data', function(chunk) {
-               console.log(chunk.length)
-            })
+        task
+            // data is piped through progress-stream first
+            .pipe(prog)
             .on('end', function() {
                 req.write(terminate);
                 req.end();
@@ -189,13 +181,14 @@ upload.putfile = function(opts, creds, task, callback) {
                 upload.error(err, task, callback);
             })
             .on('length', function(d){prog.setLength(d)})
-            // data is piped through progress-stream first
-            .pipe(prog).pipe(req, {end:false})
+            .pipe(req);
 
         // logs progress statistics to console
-        prog.on('progress', function(p){
-            console.log(p)
-        });
+        prog
+            .on('length', prog.setLength)
+            .on('progress', function(p){
+                console.log(p)
+            });
     });
 };
 
