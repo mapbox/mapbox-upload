@@ -6,23 +6,27 @@ var path = require('path');
 var http = require('http');
 var url = require('url');
 var fs = require('fs');
-var stream = require('stream');
+var progress = require('progress-stream');
 
 module.exports = upload;
 
 // Returns a task eventEmitter immediately.
 function upload(opts, callback) {
     callback = callback || function(){};
+    // if task is set to a readstream,
+    // map doesn't make it to s3
+    // var task = fs.createReadStream(opts.file);
+
+    var task = new events.EventEmitter();
+
     try { opts = upload.opts(opts) }
     catch(err) { return callback(err) }
-
-    var task = fs.createReadStream(opts.file);
     callback(null, task);
 
-    fs.stat(opts.file, function(err, data){
-        task.emit('length', data.size);
-        task.length = data.size;
-    });
+    // fs.stat(opts.file, function(err, data){
+    //     task.emit('length', data.size);
+    //     task.length = data.size;
+    // });
 
     upload.getcreds(opts, task);
     var creds;
@@ -167,16 +171,15 @@ upload.putfile = function(opts, creds, task, callback) {
         req.write(multipartBody, 'ascii');
 
         // Set up read for file and start the upload.
-        var bytesWritten = 0;
-        var updated = +new Date;
-        task
+        var prog = progress({
+            // objectMode: true,
+            time: 300,
+            length: stat.size
+        });
+        // task
+        fs.createReadStream(opts.file)
             .on('data', function(chunk) {
-                bytesWritten += chunk.length;
-                if (+new Date > updated + 1000) task.emit('progress', {
-                    progress: bytesWritten / stat.size,
-                    status: 'processing',
-                    updated: updated
-                });
+               console.log(chunk.length)
             })
             .on('end', function() {
                 req.write(terminate);
@@ -185,7 +188,14 @@ upload.putfile = function(opts, creds, task, callback) {
             .on('error', function(err) {
                 upload.error(err, task, callback);
             })
-            .pipe(req, {end:false});
+            .on('length', function(d){prog.setLength(d)})
+            // data is piped through progress-stream first
+            .pipe(prog).pipe(req, {end:false})
+
+        // logs progress statistics to console
+        prog.on('progress', function(p){
+            console.log(p)
+        });
     });
 };
 
