@@ -14,14 +14,11 @@ module.exports = upload;
 function upload(opts) {
     var prog = progress({
         time: 100,
+        length: fs.statSync(opts.file).size
     });
 
     try { opts = upload.opts(opts) }
     catch(err) { return upload.err(err, prog) }
-
-    fs.stat(opts.file, function(err, data){
-        prog.setLength(data.size);
-    });
 
     upload.getcreds(opts, prog);
     return prog;
@@ -85,20 +82,9 @@ upload.putfile = function(opts, creds, prog) {
     var st = fs.createReadStream(opts.file)
         // data is piped through progress-stream first
         .pipe(prog)
-        .on('data', function(chunk){
-            console.log(chunk.length)
-        })
-        .on('end', function() {
-            console.log('ended')
-            // req.write(terminate);
-            // req.end();
-        })
         .on('error', function(err) {
-            console.log('errrrror')
             upload.error(err, prog);
-        })
-        // .pipe(req);
-
+        });
     prog
         .on('progress', function(p){
             prog.emit('stats', p);
@@ -112,13 +98,16 @@ upload.putfile = function(opts, creds, prog) {
         }
     )
 
+    // send credentials
     var multipart = req.form();
     Object.keys(creds).forEach(function(c){
         if (c === 'filename' || c === 'bucket') return;
-        else multipart.append(c, creds[c]);
+        multipart.append(c, creds[c]);
     });
-    // send file as a stream
-    multipart.append('file', st)
+    // pass file in as a readstream
+    multipart.append('file', st);
+    // request/form-data doesn't set content-length header to size of stream
+    req.setHeader('content-length', fs.statSync(opts.file).size + multipart.getLengthSync());
 
     req.on('response', function(resp) {
         var data = '';
