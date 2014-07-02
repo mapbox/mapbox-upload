@@ -13,7 +13,7 @@ module.exports = upload;
 // Returns a progress stream immediately
 function upload(opts) {
     var prog = progress({
-        time: 300,
+        time: 100,
     });
 
     try { opts = upload.opts(opts) }
@@ -82,94 +82,67 @@ upload.putfile = function(opts, creds, prog) {
     if (!creds.bucket)
         return upload.error(new Error('"bucket" required in creds'), prog);
 
-    fs.stat(opts.file, function(err, stat) {
-        if (err) return upload.error(err, prog);
+    var st = fs.createReadStream(opts.file)
+        // data is piped through progress-stream first
+        .pipe(prog)
+        .on('data', function(chunk){
+            console.log(chunk.length)
+        })
+        .on('end', function() {
+            console.log('ended')
+            // req.write(terminate);
+            // req.end();
+        })
+        .on('error', function(err) {
+            console.log('errrrror')
+            upload.error(err, prog);
+        })
+        // .pipe(req);
 
-        var boundary = '----TileMill' + crypto.createHash('md5').update(+new Date + '').digest('hex').substring(0,6);
-        var filename = path.basename(opts.file);
-        var multipartBody = new Buffer(
-            Object.keys(creds).reduce(function(memo, key) {
-                if (key === 'bucket') return memo;
-                if (key === 'filename') return memo;
-                memo.push('--' + boundary + '\r\n' +
-                    'Content-Disposition: form-data; name="' + key + '"\r\n' +
-                    '\r\n' + creds[key] + '\r\n');
-                return memo;
-            },[])
-            .concat(['--' + boundary + '\r\n' +
-                'Content-Disposition: form-data; name="file"; filename="' + filename + '"\r\n' +
-                'Content-Type: application/octet-stream\r\n\r\n'])
-            .join('')
-        );
-        var terminate = new Buffer('\r\n--' + boundary + '--', 'ascii');
-        var reqopts = {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'multipart/form-data; boundary=' + boundary,
-                'Content-Length': stat.size + multipartBody.length + terminate.length,
-                'X_FILE_NAME': filename
-            }
-        };
-        if (opts.proxy) {
-            var parsed = url.parse(opts.proxy);
-            reqopts.host = parsed.hostname;
-            reqopts.port = parsed.port;
-            reqopts.path = 'http://' + creds.bucket + '.s3.amazonaws.com';
-            reqopts.headers.Host = creds.bucket + '.s3.amazonaws.com';
-            if (parsed.auth) {
-                opts.headers['proxy-authorization'] = 'Basic ' + new Buffer(parsed.auth).toString('base64');
-            }
-        } else {
-            reqopts.host = creds.bucket + '.s3.amazonaws.com';
-            reqopts.path = '/';
-        }
-        var req = http.request(reqopts);
-
-        req.on('response', function(resp) {
-            var data = '';
-            var done = function(err) {
-                if (err) {
-                    return upload.error(err, prog);
-                } else if ([200, 201, 204, 303].indexOf(resp.statusCode) === -1) {
-                    var parsed = [
-                        {key:'code', pattern:new RegExp('[^>]+(?=<\\/Code>)', 'g')},
-                        {key:'message', pattern:new RegExp('[^>]+(?=<\\/Message>)', 'g')}
-                    ].reduce(function(memo, pair) {
-                        memo[pair.key] = data.match(pair.pattern) || [];
-                        return memo;
-                    }, {});
-                    var message = 'Error: S3 upload failed. Status: ' + resp.statusCode;
-                    if (parsed.code[0] && parsed.message[0])
-                        message += ' (' + parsed.code[0] + ' - ' + parsed.message[0] + ')';
-                    return upload.error(new Error(message), prog);
-                }
-                upload.putmap(opts, creds, prog);
-            };
-            resp.on('data', function(chunk) { chunk += data; });
-            resp.on('close', done);
-            resp.on('end', done);
+    prog
+        .on('progress', function(p){
+            prog.emit('stats', p);
         });
 
-        // Write multipart values from memory.
-        req.write(multipartBody, 'ascii');
+    // Set up read for file and start the upload.
+    var req = request({
+        method: 'POST',
+        uri: 'http://' + creds.bucket + '.s3.amazonaws.com',
+        path: '/'
+        }
+    )
 
-        // Set up read for file and start the upload.
-        fs.createReadStream(opts.file)
-            // data is piped through progress-stream first
-            .pipe(prog)
-            .on('end', function() {
-                req.write(terminate);
-                req.end();
-            })
-            .on('error', function(err) {
-                upload.error(err, prog);
-            })
-            .pipe(req);
+    var multipart = req.form();
+    Object.keys(creds).forEach(function(c){
+        if (c === 'filename' || c === 'bucket') return;
+        else multipart.append(c, creds[c]);
+    });
+    // send file as a stream
+    multipart.append('file', st)
 
-        prog
-            .on('progress', function(p){
-                prog.emit('stats', p);
-            });
+    req.on('response', function(resp) {
+        var data = '';
+        var done = function(err) {
+            if (err) {
+                return upload.error(err, prog);
+            } else if ([200, 201, 204, 303].indexOf(resp.statusCode) === -1) {
+                var parsed = [
+                    {key:'code', pattern:new RegExp('[^>]+(?=<\\/Code>)', 'g')},
+                    {key:'message', pattern:new RegExp('[^>]+(?=<\\/Message>)', 'g')}
+                ].reduce(function(memo, pair) {
+                    memo[pair.key] = data.match(pair.pattern) || [];
+                    return memo;
+                }, {});
+                var message = 'Error: S3 upload failed. Status: ' + resp.statusCode;
+                if (parsed.code[0] && parsed.message[0])
+                    message += ' (' + parsed.code[0] + ' - ' + parsed.message[0] + ')';
+                return upload.error(new Error(message), prog);
+            }
+            upload.putmap(opts, creds, prog);
+        };
+        resp.on('data', function(chunk) { chunk += data; });
+        resp.on('close', done);
+        resp.on('end', done);
     });
 };
 
