@@ -10,33 +10,23 @@ var progress = require('progress-stream');
 
 module.exports = upload;
 
-// Returns a task eventEmitter immediately.
-function upload(opts, callback) {
-    callback = callback || function(){};
-    var task = fs.createReadStream(opts.file);
+// Returns a progress stream immediately
+function upload(opts) {
+    var prog = progress({
+        time: 300,
+    });
 
     try { opts = upload.opts(opts) }
-    catch(err) { return callback(err) }
-    callback(null, task);
+    catch(err) { return upload.err(err, prog) }
 
     fs.stat(opts.file, function(err, data){
-        task.emit('length', data.size);
-        task.length = data.size;
+        prog.setLength(data.size);
     });
 
-    upload.getcreds(opts, task);
-    var creds;
-    task.once('creds', function(c) {
-        creds = c;
-        upload.putfile(opts, creds, task);
-    });
-    task.once('putfile', function() {
-        upload.putmap(opts, creds, task);
-    });
-    task.once('putmap', function() {
-        task.emit('end');
-    });
-};
+    upload.getcreds(opts, prog);
+    return prog;
+
+}
 upload.MAPBOX = 'https://tiles.mapbox.com';
 
 upload.opts = function(opts) {
@@ -56,14 +46,13 @@ upload.opts = function(opts) {
     return opts;
 };
 
-upload.error = function(err, task, callback) {
-    task.emit('error', err);
-    return callback && callback(err);
+upload.error = function(err, prog) {
+    return prog.emit('error', err);
 };
 
-upload.getcreds = function(opts, task, callback) {
+upload.getcreds = function(opts, prog) {
     try { opts = upload.opts(opts) }
-    catch(err) { return upload.error(err, task, callback) }
+    catch(err) { return upload.error(err, prog) }
 
     request.get({
         uri: util.format('%s/api/upload/%s?access_token=%s', opts.mapbox, opts.account, opts.accesstoken),
@@ -72,30 +61,29 @@ upload.getcreds = function(opts, task, callback) {
     }, function(err, resp, body) {
         if (!err && resp.statusCode !== 200)
             err = new Error('MapBox is not available. Status ' + resp.statusCode);
-        if (err) return upload.error(err, task, callback);
+        if (err) return upload.error(err, prog);
         try {
             var creds = JSON.parse(body);
             if (!creds.key || !creds.bucket) {
-                return upload.error(new Error('Invalid creds'), task, callback);
+                return upload.error(new Error('Invalid creds'), prog);
             } else {
-                task.emit('creds', creds);
-                return callback && callback(null, creds);
+                upload.putfile(opts, creds, prog);
             }
-        } catch(err) { return upload.error(err, task, callback) }
+        } catch(err) { return upload.error(err, prog) }
     });
 };
 
-upload.putfile = function(opts, creds, task, callback) {
+upload.putfile = function(opts, creds, prog) {
     try { opts = upload.opts(opts) }
-    catch(err) { return upload.error(err, task, callback) }
+    catch(err) { return upload.error(err, prog) }
 
     if (!creds.key)
-        return upload.error(new Error('"key" required in creds'), task, callback);
+        return upload.error(new Error('"key" required in creds'), prog);
     if (!creds.bucket)
-        return upload.error(new Error('"bucket" required in creds'), task, callback);
+        return upload.error(new Error('"bucket" required in creds'), prog);
 
     fs.stat(opts.file, function(err, stat) {
-        if (err) return upload.error(err, task, callback);
+        if (err) return upload.error(err, prog);
 
         var boundary = '----TileMill' + crypto.createHash('md5').update(+new Date + '').digest('hex').substring(0,6);
         var filename = path.basename(opts.file);
@@ -103,14 +91,14 @@ upload.putfile = function(opts, creds, task, callback) {
             Object.keys(creds).reduce(function(memo, key) {
                 if (key === 'bucket') return memo;
                 if (key === 'filename') return memo;
-                memo.push('--' + boundary + '\r\n'
-                    + 'Content-Disposition: form-data; name="' + key + '"\r\n'
-                    + '\r\n' + creds[key] + '\r\n');
+                memo.push('--' + boundary + '\r\n' +
+                    'Content-Disposition: form-data; name="' + key + '"\r\n' +
+                    '\r\n' + creds[key] + '\r\n');
                 return memo;
             },[])
-            .concat(['--' + boundary + '\r\n'
-                + 'Content-Disposition: form-data; name="file"; filename="' + filename + '"\r\n'
-                + 'Content-Type: application/octet-stream\r\n\r\n'])
+            .concat(['--' + boundary + '\r\n' +
+                'Content-Disposition: form-data; name="file"; filename="' + filename + '"\r\n' +
+                'Content-Type: application/octet-stream\r\n\r\n'])
             .join('')
         );
         var terminate = new Buffer('\r\n--' + boundary + '--', 'ascii');
@@ -129,7 +117,7 @@ upload.putfile = function(opts, creds, task, callback) {
             reqopts.path = 'http://' + creds.bucket + '.s3.amazonaws.com';
             reqopts.headers.Host = creds.bucket + '.s3.amazonaws.com';
             if (parsed.auth) {
-                opts.headers['proxy-authorization'] = 'Basic ' + new Buffer(parsed.auth).toString('base64')
+                opts.headers['proxy-authorization'] = 'Basic ' + new Buffer(parsed.auth).toString('base64');
             }
         } else {
             reqopts.host = creds.bucket + '.s3.amazonaws.com';
@@ -141,7 +129,7 @@ upload.putfile = function(opts, creds, task, callback) {
             var data = '';
             var done = function(err) {
                 if (err) {
-                    return upload.error(err, task, callback);
+                    return upload.error(err, prog);
                 } else if ([200, 201, 204, 303].indexOf(resp.statusCode) === -1) {
                     var parsed = [
                         {key:'code', pattern:new RegExp('[^>]+(?=<\\/Code>)', 'g')},
@@ -153,10 +141,9 @@ upload.putfile = function(opts, creds, task, callback) {
                     var message = 'Error: S3 upload failed. Status: ' + resp.statusCode;
                     if (parsed.code[0] && parsed.message[0])
                         message += ' (' + parsed.code[0] + ' - ' + parsed.message[0] + ')';
-                    return upload.error(new Error(message), task, callback);
+                    return upload.error(new Error(message), prog);
                 }
-                task.emit('putfile');
-                return callback && callback();
+                upload.putmap(opts, creds, prog);
             };
             resp.on('data', function(chunk) { chunk += data; });
             resp.on('close', done);
@@ -167,10 +154,7 @@ upload.putfile = function(opts, creds, task, callback) {
         req.write(multipartBody, 'ascii');
 
         // Set up read for file and start the upload.
-        var prog = progress({
-            time: 300,
-        });
-        task
+        fs.createReadStream(opts.file)
             // data is piped through progress-stream first
             .pipe(prog)
             .on('end', function() {
@@ -178,39 +162,36 @@ upload.putfile = function(opts, creds, task, callback) {
                 req.end();
             })
             .on('error', function(err) {
-                upload.error(err, task, callback);
+                upload.error(err, prog);
             })
-            .on('length', function(d){prog.setLength(d)})
             .pipe(req);
 
-        // logs progress statistics to console
         prog
-            .on('length', prog.setLength)
             .on('progress', function(p){
-                console.log(p)
+                prog.emit('stats', p);
             });
     });
 };
 
-upload.putmap = function(opts, creds, task, callback) {
+upload.putmap = function(opts, creds, prog) {
     try { opts = upload.opts(opts) }
-    catch(err) { return upload.error(err, task, callback) }
+    catch(err) { return upload.error(err, prog) }
 
     if (!creds.key)
-        return upload.error(new Error('"key" required in creds'), task, callback);
+        return upload.error(new Error('"key" required in creds'), prog);
     if (!creds.bucket)
-        return upload.error(new Error('"bucket" required in creds'), task, callback);
+        return upload.error(new Error('"bucket" required in creds'), prog);
 
     var uri = util.format('%s/api/Map/%s?access_token=%s', opts.mapbox, opts.mapid, opts.accesstoken);
     request.get({ uri: uri, proxy: opts.proxy }, function(err, res, body) {
         if (err)
-            return upload.error(err, task, callback);
+            return upload.error(err, prog);
         if (res.statusCode !== 404 && res.statusCode !== 200)
-            return upload.error(new Error('Map PUT failed: ' + res.statusCode), task, callback);
+            return upload.error(new Error('Map PUT failed: ' + res.statusCode), prog);
 
         try {
             var data = res.statusCode === 404 ? {} : JSON.parse(body);
-        } catch(err) { return upload.error(err, task, callback) }
+        } catch(err) { return upload.error(err, prog) }
 
         data.id = opts.mapid;
         data._type = 'tileset';
@@ -224,12 +205,10 @@ upload.putmap = function(opts, creds, task, callback) {
             proxy: opts.proxy
         }, function(err, res, body) {
             if (err)
-                return upload.error(err, task, callback);
+                return upload.error(err, prog);
             if (res.statusCode !== 200)
-                return upload.error(new Error('Map PUT failed: ' + res.statusCode), task, callback);
-            task.emit('putmap', body);
-            return callback && callback(null, body);
+                return upload.error(new Error('Map PUT failed: ' + res.statusCode), prog);
+            return prog.emit('end', body);
         });
     });
 };
-
