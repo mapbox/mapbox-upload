@@ -132,10 +132,12 @@ upload.putfile = function(opts, creds, prog, callback) {
 
     // data is piped through progress-stream first
     form.pipe(prog).pipe(req)
-    prog
-        .on('progress', function(p){
+    prog.on('progress', function(p){
             prog.emit('stats', p);
-        });
+    });
+    req.on('unpipe', function(){
+        return upload.error(new Error('Upload Canceled'), prog)
+    });
 };
 
 upload.putmap = function(opts, creds, prog, callback) {
