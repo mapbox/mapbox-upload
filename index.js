@@ -1,4 +1,5 @@
 var request = require('request');
+var FormData = require('form-data');
 var crypto = require('crypto');
 var util = require('util');
 var path = require('path');
@@ -84,38 +85,23 @@ upload.putfile = function(opts, creds, prog, callback) {
     if (!creds.bucket)
         return upload.error(new Error('"bucket" required in creds'), prog);
 
-    var st = fs.createReadStream(opts.file)
-        // data is piped through progress-stream first
-        .pipe(prog)
-        .on('error', function(err) {
-            upload.error(err, prog);
-        });
-    prog
-        .on('progress', function(p){
-            prog.emit('stats', p);
-        });
-
-    // Set up read for file and start the upload.
-    var req = request({
-        method: 'POST',
-        uri: 'http://' + creds.bucket + '.s3.amazonaws.com',
-        path: '/'
-        }
-    );
-    // send credentials
-    var multipart = req.form();
+    // send credentials and create multipart form
+    var form = new FormData();
     Object.keys(creds).forEach(function(c){
         if (c === 'filename' || c === 'bucket') return;
-        multipart.append(c, creds[c]);
+        form.append(c, creds[c]);
     });
     // pass file in as a readstream
-    multipart.append('file', st);
-    // request/form-data doesn't set content-length header to size of stream
-    req.setHeader('content-length', fs.statSync(opts.file).size + multipart.getLengthSync());
+    form.append('file', st, {
+        knownLength: fs.statSync(opts.file).size + form.getLengthSync()
+    })
 
-    req.on('response', function(resp) {
-        var data = '';
-        var done = function(err) {
+     var req = request({
+        method: 'POST',
+        uri: 'http://' + creds.bucket + '.s3.amazonaws.com',
+        path: '/',
+        headers: form.getHeaders()
+        }, function(err, resp, body){
             if (err) {
                 return upload.error(err, prog);
             } else if ([200, 201, 204, 303].indexOf(resp.statusCode) === -1) {
@@ -123,7 +109,7 @@ upload.putfile = function(opts, creds, prog, callback) {
                     {key:'code', pattern:new RegExp('[^>]+(?=<\\/Code>)', 'g')},
                     {key:'message', pattern:new RegExp('[^>]+(?=<\\/Message>)', 'g')}
                 ].reduce(function(memo, pair) {
-                    memo[pair.key] = data.match(pair.pattern) || [];
+                    memo[pair.key] = body.match(pair.pattern) || [];
                     return memo;
                 }, {});
                 var message = 'Error: S3 upload failed. Status: ' + resp.statusCode;
@@ -133,11 +119,22 @@ upload.putfile = function(opts, creds, prog, callback) {
             }
             if (callback) return callback && callback();
             upload.putmap(opts, creds, prog, callback);
-        };
-        resp.on('data', function(chunk) { chunk += data; });
-        resp.on('close', done);
-        resp.on('end', done);
     });
+
+    // headers must be set manually with the correct stream length
+    req.setHeader('content-length', form.getLengthSync());
+
+    // Set up read for file and start the upload.
+    var st = fs.createReadStream(opts.file)
+        .on('error', function(err) {
+            upload.error(err, prog);
+        });
+    // data is piped through progress-stream first
+    form.pipe(prog).pipe(req)
+    prog
+        .on('progress', function(p){
+            prog.emit('stats', p);
+        });
 };
 
 upload.putmap = function(opts, creds, prog, callback) {
