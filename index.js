@@ -1,5 +1,4 @@
 var request = require('request');
-var events = require('events');
 var crypto = require('crypto');
 var util = require('util');
 var path = require('path');
@@ -20,9 +19,11 @@ function upload(opts) {
     try { opts = upload.opts(opts) }
     catch(err) { return upload.err(err, prog) }
 
-    upload.getcreds(opts, prog);
+    upload.getcreds(opts, prog, function(err, c){
+        var creds = c;
+        upload.putfile(opts, creds, prog);
+    });
     return prog;
-
 }
 upload.MAPBOX = 'https://tiles.mapbox.com';
 
@@ -47,10 +48,9 @@ upload.error = function(err, prog) {
     return prog.emit('error', err);
 };
 
-upload.getcreds = function(opts, prog) {
+upload.getcreds = function(opts, prog, callback) {
     try { opts = upload.opts(opts) }
     catch(err) { return upload.error(err, prog) }
-
     request.get({
         uri: util.format('%s/api/upload/%s?access_token=%s', opts.mapbox, opts.account, opts.accesstoken),
         headers: { 'Host': url.parse(opts.mapbox).host },
@@ -64,13 +64,13 @@ upload.getcreds = function(opts, prog) {
             if (!creds.key || !creds.bucket) {
                 return upload.error(new Error('Invalid creds'), prog);
             } else {
-                upload.putfile(opts, creds, prog);
+                return callback && callback(null, creds);
             }
         } catch(err) { return upload.error(err, prog) }
     });
 };
 
-upload.putfile = function(opts, creds, prog) {
+upload.putfile = function(opts, creds, prog, callback) {
     try { opts = upload.opts(opts) }
     catch(err) { return upload.error(err, prog) }
 
@@ -96,8 +96,7 @@ upload.putfile = function(opts, creds, prog) {
         uri: 'http://' + creds.bucket + '.s3.amazonaws.com',
         path: '/'
         }
-    )
-
+    );
     // send credentials
     var multipart = req.form();
     Object.keys(creds).forEach(function(c){
@@ -127,7 +126,8 @@ upload.putfile = function(opts, creds, prog) {
                     message += ' (' + parsed.code[0] + ' - ' + parsed.message[0] + ')';
                 return upload.error(new Error(message), prog);
             }
-            upload.putmap(opts, creds, prog);
+            if (callback) return callback && callback();
+            upload.putmap(opts, creds, prog, callback);
         };
         resp.on('data', function(chunk) { chunk += data; });
         resp.on('close', done);
@@ -135,7 +135,7 @@ upload.putfile = function(opts, creds, prog) {
     });
 };
 
-upload.putmap = function(opts, creds, prog) {
+upload.putmap = function(opts, creds, prog, callback) {
     try { opts = upload.opts(opts) }
     catch(err) { return upload.error(err, prog) }
 
@@ -170,7 +170,8 @@ upload.putmap = function(opts, creds, prog) {
                 return upload.error(err, prog);
             if (res.statusCode !== 200)
                 return upload.error(new Error('Map PUT failed: ' + res.statusCode), prog);
-            return prog.emit('end', body);
+            prog.emit('finished');
+            return callback && callback(null, body);
         });
     });
 };
