@@ -91,6 +91,12 @@ upload.putfile = function(opts, creds, prog, callback) {
         if (c === 'filename' || c === 'bucket') return;
         form.append(c, creds[c]);
     });
+
+    // Set up read for file and start the upload.
+    var st = fs.createReadStream(opts.file)
+        .on('error', function(err) {
+            upload.error(err, prog);
+        });
     // pass file in as a readstream
     form.append('file', st, {
         knownLength: fs.statSync(opts.file).size + form.getLengthSync()
@@ -124,11 +130,6 @@ upload.putfile = function(opts, creds, prog, callback) {
     // headers must be set manually with the correct stream length
     req.setHeader('content-length', form.getLengthSync());
 
-    // Set up read for file and start the upload.
-    var st = fs.createReadStream(opts.file)
-        .on('error', function(err) {
-            upload.error(err, prog);
-        });
     // data is piped through progress-stream first
     form.pipe(prog).pipe(req)
     prog
