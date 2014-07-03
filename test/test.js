@@ -78,7 +78,10 @@ describe('upload', function() {
         var prog = upload(opts());
         prog.once('progress', function(p){
             assert.equal(100, p.percentage);
-            assert.equal(69632, p.transferred);
+            assert.equal(69632, p.length);
+            // assert that multipart form is the right size,
+            // adds 1401 bytes to transfer
+            assert.equal(71033, p.transferred);
             assert.equal(0, p.remaining);
             assert.equal(0, p.eta);
             done();
