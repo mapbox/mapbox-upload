@@ -99,7 +99,7 @@ upload.putfile = function(opts, creds, prog, callback) {
         });
     // pass file in as a readstream
     form.append('file', st, {
-        knownLength: fs.statSync(opts.file).size + form.getLengthSync()
+        knownLength: fs.statSync(opts.file).size
     })
 
      var req = request({
