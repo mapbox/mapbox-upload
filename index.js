@@ -56,17 +56,22 @@ upload.getcreds = function(opts, prog, callback) {
         headers: { 'Host': url.parse(opts.mapbox).host },
         proxy: opts.proxy
     }, function(err, resp, body) {
-        if (!err && resp.statusCode !== 200)
-            err = new Error('MapBox is not available. Status ' + resp.statusCode);
         if (err) return upload.error(err, prog);
         try {
-            var creds = JSON.parse(body);
-            if (!creds.key || !creds.bucket) {
-                return upload.error(new Error('Invalid creds'), prog);
-            } else {
-                return callback && callback(null, creds);
-            }
-        } catch(err) { return upload.error(err, prog) }
+            body = JSON.parse(body);
+        } catch(err) {
+            return upload.error(err, prog);
+        }
+        if (resp.statusCode !== 200) {
+            var err = new Error(body && body.message || 'Mapbox is not available: ' + resp.statusCode);
+            err.code = resp.statusCode;
+            return upload.error(err, prog);
+        }
+        if (!body.key || !body.bucket) {
+            return upload.error(new Error('Invalid creds'), prog);
+        } else {
+            return callback && callback(null, body);
+        }
     });
 };
 
@@ -148,8 +153,11 @@ upload.putmap = function(opts, creds, prog, callback) {
     request.get({ uri: uri, proxy: opts.proxy }, function(err, res, body) {
         if (err)
             return upload.error(err, prog);
-        if (res.statusCode !== 404 && res.statusCode !== 200)
-            return upload.error(new Error('Map PUT failed: ' + res.statusCode), prog);
+        if (res.statusCode !== 404 && res.statusCode !== 200) {
+            var err = new Error(body && body.message || 'Map PUT failed: ' + res.statusCode);
+            err.code = res.statusCode;
+            return upload.error(err, prog);
+        }
 
         try {
             var data = res.statusCode === 404 ? {} : JSON.parse(body);
@@ -168,8 +176,11 @@ upload.putmap = function(opts, creds, prog, callback) {
         }, function(err, res, body) {
             if (err)
                 return upload.error(err, prog);
-            if (res.statusCode !== 200)
-                return upload.error(new Error('Map PUT failed: ' + res.statusCode), prog);
+            if (res.statusCode !== 200) {
+                var err = new Error(body && body.message || 'Map PUT failed: ' + res.statusCode);
+                err.code = res.statusCode;
+                return upload.error(err, prog);
+            }
             prog.emit('finished');
             return callback && callback(null, body);
         });
