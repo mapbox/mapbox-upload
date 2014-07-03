@@ -28,7 +28,7 @@ function Server() {
         case '/api/Map/test.upload?access_token=validtoken':
             if (req.method === 'GET') {
                 res.writeHead(404);
-                res.end();
+                res.end(JSON.stringify({message:'Not found'}));
             } else if (req.method === 'PUT') {
                 res.writeHead(200);
                 res.end(JSON.stringify({}));
@@ -36,7 +36,7 @@ function Server() {
             break;
         default:
             res.writeHead(404);
-            res.end();
+            res.end(JSON.stringify({message:'Not found'}));
             break;
         }
     }).listen(3000);
@@ -113,7 +113,7 @@ describe('upload.getcreds', function() {
     });
     it('failed status', function(done) {
         function cb(err, creds) {
-            assert.equal('MapBox is not available. Status 404', err.message);
+            assert.equal('Unexpected token <', err.message);
             done && done() || (done = false);
         };
         var task = new events.EventEmitter();
@@ -159,6 +159,16 @@ describe('upload.getcreds', function() {
             done && done() || (done = false);
         });
         upload.getcreds(opts(), task, cb);
+    });
+    it('bad creds', function(done) {
+        function cb(err) {
+            assert.equal(404, err.code);
+            assert.equal('Not found', err.message);
+            done && done() || (done = false);
+        };
+        var task = new events.EventEmitter();
+        task.once('error', cb);
+        upload.getcreds(opts({ accesstoken: 'invalid' }), task, cb);
     });
 });
 
@@ -239,5 +249,15 @@ describe('upload.putmap', function() {
             done && done() || (done = false);
         });
         upload.putmap(opts(), creds, task, cb);
+    });
+    it('bad creds', function(done) {
+        function cb(err) {
+            assert.equal(404, err.code);
+            assert.equal('Not found', err.message);
+            done && done() || (done = false);
+        };
+        var task = new events.EventEmitter();
+        task.on('error', cb);
+        upload.putmap(opts({accesstoken:'invalid'}), creds, task, cb);
     });
 });
