@@ -56,7 +56,7 @@ upload.getcreds = function(opts, prog, callback) {
         headers: { 'Host': url.parse(opts.mapbox).host },
         proxy: opts.proxy
     }, function(err, resp, body) {
-        if (err) return upload.error(err, task, callback);
+        if (err) return upload.error(err, prog);
         try {
             body = JSON.parse(body);
         } catch(err) {
@@ -175,7 +175,7 @@ upload.putmap = function(opts, creds, prog, callback) {
             proxy: opts.proxy
         }, function(err, res, body) {
             if (err)
-                return upload.error(err, task, callback);
+                return upload.error(err, prog);
             if (res.statusCode !== 200) {
                 var err = new Error(body && body.message || 'Map PUT failed: ' + res.statusCode);
                 err.code = res.statusCode;
