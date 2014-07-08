@@ -106,7 +106,7 @@ upload.putfile = function(opts, creds, prog, callback) {
         method: 'POST',
         uri: 'http://' + creds.bucket + '.s3.amazonaws.com',
         path: '/',
-        headers: form.getHeaders()
+        headers: form.getCustomHeaders()
         }, function(err, resp, body){
             if (err) {
                 return upload.error(err, prog);
@@ -126,9 +126,6 @@ upload.putfile = function(opts, creds, prog, callback) {
             if (callback) return callback && callback();
             upload.putmap(opts, creds, prog, callback);
     });
-
-    // headers must be set manually with the correct stream length
-    req.setHeader('content-length', form.getLengthSync());
 
     // data is piped through progress-stream first
     form.pipe(prog).pipe(req)
