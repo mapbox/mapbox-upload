@@ -18,7 +18,7 @@ function upload(opts) {
     });
 
     try { opts = upload.opts(opts) }
-    catch(err) { return upload.err(err, prog) }
+    catch(err) { return upload.error(err, prog) }
 
     upload.getcreds(opts, prog, function(err, c){
         var creds = c;
