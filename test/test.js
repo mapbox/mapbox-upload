@@ -1,6 +1,6 @@
 var http = require('http');
 var assert = require('assert');
-var events = require('events');
+var progress = require('progress-stream');
 var request = require('request');
 var upload = require(__dirname + '/../index.js');
 var creds = require('./test.creds.js');
@@ -74,22 +74,18 @@ describe('upload', function() {
     after(function(done) {
         server.close(done);
     });
-    it('good creds', function(done) {
-        upload(opts(), function(err, task) {
-            assert.ifError(err);
-            assert.ok(!!task);
-            task.once('end', function() {
-                request.head({
-                    uri: 'http://mapbox-upload-testing.s3.amazonaws.com/' + creds.key
-                }, function(err, res, body) {
-                    assert.ifError(err);
-                    assert.equal(200, res.statusCode);
-                    assert.equal(69632, res.headers['content-length']);
-                    assert.ok(+new Date(res.headers['last-modified']) > +new Date - 60e3);
-                    done();
-                });
-            });
-        });
+    it('progress reporting', function(done) {
+        var prog = upload(opts());
+        prog.once('progress', function(p){
+            assert.equal(100, p.percentage);
+            assert.equal(69632, p.length);
+            // assert that multipart form is the right size,
+            // adds 1401 bytes to transfer
+            assert.equal(71033, p.transferred);
+            assert.equal(0, p.remaining);
+            assert.equal(0, p.eta);
+            done();
+        })
     });
 });
 
@@ -107,58 +103,54 @@ describe('upload.getcreds', function() {
             assert.equal('getaddrinfo ENOTFOUND', err.message);
             done && done() || (done = false);
         };
-        var task = new events.EventEmitter();
-        task.on('error', cb);
-        upload.getcreds(opts({ mapbox: 'http://doesnotexist:9999' }), task, cb);
+        var prog = progress();
+        prog.on('error', cb);
+        upload.getcreds(opts({ mapbox: 'http://doesnotexist:9999' }), prog, cb);
     });
     it('failed status', function(done) {
         function cb(err, creds) {
             assert.equal('Unexpected token <', err.message);
             done && done() || (done = false);
         };
-        var task = new events.EventEmitter();
-        task.once('error', cb);
-        upload.getcreds(opts({ mapbox: 'http://example.com' }), task, cb);
+        var prog = progress();
+        prog.once('error', cb);
+        upload.getcreds(opts({ mapbox: 'http://example.com' }), prog, cb);
     });
     it('failed badjson', function(done) {
         function cb(err, creds) {
             assert.equal('Unexpected token h', err.message);
             done && done() || (done = false);
         };
-        var task = new events.EventEmitter();
-        task.once('error', cb);
-        upload.getcreds(opts({ mapbox: 'http://localhost:3000/badjson' }), task, cb);
+        var prog = progress();
+        prog.once('error', cb);
+        upload.getcreds(opts({ mapbox: 'http://localhost:3000/badjson' }), prog, cb);
     });
     it('failed no key', function(done) {
         function cb(err, creds) {
             assert.equal('Invalid creds', err.message);
             done && done() || (done = false);
         };
-        var task = new events.EventEmitter();
-        task.once('error', cb);
-        upload.getcreds(opts({ mapbox: 'http://localhost:3000/nokey' }), task, cb);
+        var prog = progress();
+        prog.once('error', cb);
+        upload.getcreds(opts({ mapbox: 'http://localhost:3000/nokey' }), prog, cb);
     });
     it('failed no bucket', function(done) {
         function cb(err, creds) {
             assert.equal('Invalid creds', err.message);
             done && done() || (done = false);
         };
-        var task = new events.EventEmitter();
-        task.once('error', cb);
-        upload.getcreds(opts({ mapbox: 'http://localhost:3000/nobucket' }), task, cb);
+        var prog = progress();
+        prog.once('error', cb);
+        upload.getcreds(opts({ mapbox: 'http://localhost:3000/nobucket' }), prog, cb);
     });
     it('good creds', function(done) {
-        function cb(err, c) {
+        var prog = progress();
+        function cb(err, c){
             assert.ifError(err);
             assert.deepEqual(creds, c);
             done && done() || (done = false);
         };
-        var task = new events.EventEmitter();
-        task.once('creds', function(c) {
-            assert.deepEqual(creds, c);
-            done && done() || (done = false);
-        });
-        upload.getcreds(opts(), task, cb);
+        upload.getcreds(opts(), prog, cb);
     });
     it('bad creds', function(done) {
         function cb(err) {
@@ -166,30 +158,38 @@ describe('upload.getcreds', function() {
             assert.equal('Not found', err.message);
             done && done() || (done = false);
         };
-        var task = new events.EventEmitter();
-        task.once('error', cb);
-        upload.getcreds(opts({ accesstoken: 'invalid' }), task, cb);
+        var prog = progress();
+        prog.once('error', cb);
+        upload.getcreds(opts({ accesstoken: 'invalid' }), prog, cb);
     });
 });
 
 describe('upload.putfile', function() {
+    var server;
+    before(function(done) {
+        server = Server();
+        done();
+    });
+    after(function(done) {
+        server.close(done);
+    });
     it('failed no key', function(done) {
         function cb(err) {
             assert.equal('"key" required in creds', err.message);
             done && done() || (done = false);
         };
-        var task = new events.EventEmitter();
-        task.once('error', cb);
-        upload.putfile(opts(), {}, task, cb);
+        var prog = progress();
+        prog.once('error', cb);
+        upload.putfile(opts(), {}, prog, cb);
     });
     it('failed no bucket', function(done) {
         function cb(err) {
             assert.equal('"bucket" required in creds', err.message);
             done && done() || (done = false);
         };
-        var task = new events.EventEmitter();
-        task.once('error', cb);
-        upload.putfile(opts(), { key: '_pending' }, task, cb);
+        var prog = progress();
+        prog.once('error', cb);
+        upload.putfile(opts(), { key: '_pending' }, prog, cb);
     });
     it('good creds', function(done) {
         function cb(err) {
@@ -201,12 +201,12 @@ describe('upload.putfile', function() {
                 assert.equal(200, res.statusCode);
                 assert.equal(69632, res.headers['content-length']);
                 assert.ok(+new Date(res.headers['last-modified']) > +new Date - 60e3);
+                prog.called = true;
                 done && done() || (done = false);
             });
         };
-        var task = new events.EventEmitter();
-        task.once('putfile', cb);
-        upload.putfile(opts(), creds, task, cb);
+        var prog = progress();
+        upload.putfile(opts(), creds, prog, cb);
     });
 });
 
@@ -224,18 +224,18 @@ describe('upload.putmap', function() {
             assert.equal('"key" required in creds', err.message);
             done && done() || (done = false);
         };
-        var task = new events.EventEmitter();
-        task.once('error', cb);
-        upload.putmap(opts(), {}, task, cb);
+        var prog = progress();
+        prog.once('error', cb);
+        upload.putmap(opts(), {}, prog, cb);
     });
     it('failed no bucket', function(done) {
         function cb(err) {
             assert.equal('"bucket" required in creds', err.message);
             done && done() || (done = false);
         };
-        var task = new events.EventEmitter();
-        task.once('error', cb);
-        upload.putmap(opts(), { key: '_pending' }, task, cb);
+        var prog = progress();
+        prog.once('error', cb);
+        upload.putmap(opts(), { key: '_pending' }, prog, cb);
     });
     it('good creds', function(done) {
         function cb(err, body) {
@@ -243,12 +243,12 @@ describe('upload.putmap', function() {
             assert.deepEqual(body, {});
             done && done() || (done = false);
         };
-        var task = new events.EventEmitter();
-        task.once('putmap', function(body) {
+        var prog = progress();
+        prog.once('putmap', function(body) {
             assert.deepEqual(body, {});
             done && done() || (done = false);
         });
-        upload.putmap(opts(), creds, task, cb);
+        upload.putmap(opts(), creds, prog, cb);
     });
     it('bad creds', function(done) {
         function cb(err) {
@@ -256,8 +256,8 @@ describe('upload.putmap', function() {
             assert.equal('Not found', err.message);
             done && done() || (done = false);
         };
-        var task = new events.EventEmitter();
-        task.on('error', cb);
-        upload.putmap(opts({accesstoken:'invalid'}), creds, task, cb);
+        var prog = progress();
+        prog.on('error', cb);
+        upload.putmap(opts({accesstoken:'invalid'}), creds, prog, cb);
     });
 });

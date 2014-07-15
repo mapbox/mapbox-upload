@@ -32,19 +32,27 @@ npm install --save mapbox-upload
 ```javascript
 var upload = require('mapbox-upload');
 
-upload({
+// creates a progress-stream object to track status of
+// upload while upload continues in background
+var progress = upload({
     file: __dirname + '/test.mbtiles', // Path to mbtiles file on disk.
     account: 'test', // Mapbox user account.
     accesstoken: 'validtoken', // A valid Mapbox API secret token with the map:write scope enabled.
     mapid: 'test.upload' // The identifier of the map to create or update.
-}, function(err, upload) {
-    if (err) throw err;
-
-    task.once('end', function() {
-        // Upload has completed but is likely queued for processing and not yet available on Mapbox.
-    });
-
 });
+
+progress.on('error', function(err){
+	if (err) throw err;
+});
+
+progress.on('progress', function(p){
+	// Do something with progress-stream object, like display upload status
+});
+
+progress.once('end', function(){
+	// Upload has completed but is likely queued for processing and not yet available on Mapbox.
+});
+
 ```
 
 ## Tests
