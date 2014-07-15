@@ -13,7 +13,7 @@
     }
   ],
   "dependencies": {
-    "request": "2.36.x",
+    "request": "2.37.x",
     "progress-stream": "0.5.0",
     "form-data": "0.1.x"
   },
