@@ -162,6 +162,16 @@ describe('upload.getcreds', function() {
         prog.once('error', cb);
         upload.getcreds(opts({ accesstoken: 'invalid' }), prog, cb);
     });
+    it('bad creds', function(done) {
+        function cb(err) {
+            assert.equal(404, err.code);
+            assert.equal('Not found', err.message);
+            done && done() || (done = false);
+        };
+        var task = new events.EventEmitter();
+        task.once('error', cb);
+        upload.getcreds(opts({ accesstoken: 'invalid' }), task, cb);
+    });
 });
 
 describe('upload.putfile', function() {
@@ -259,5 +269,15 @@ describe('upload.putmap', function() {
         var prog = progress();
         prog.on('error', cb);
         upload.putmap(opts({accesstoken:'invalid'}), creds, prog, cb);
+    });
+    it('bad creds', function(done) {
+        function cb(err) {
+            assert.equal(404, err.code);
+            assert.equal('Not found', err.message);
+            done && done() || (done = false);
+        };
+        var task = new events.EventEmitter();
+        task.on('error', cb);
+        upload.putmap(opts({accesstoken:'invalid'}), creds, task, cb);
     });
 });
