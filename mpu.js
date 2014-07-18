@@ -4,7 +4,8 @@ var EventEmitter = require('events').EventEmitter,
     path = require('path'),
     os = require('os'),
     util = require('util'),
-    parse = require('./parse');
+    parse = require('./parse'),
+    request = require('request');
 
 /**
  * Initializes a Amazon S3 Multi part file upload with the given options
@@ -31,7 +32,7 @@ function MultiPartUpload(opts, callback) {
     this.objectName = opts.objectName;
     this.fileName = opts.file;
     this.headers = opts.headers || {};
-    this.client = AWS(creds);
+    this.client = AWS(opts.creds);
     this.partSize = opts.partSize || 5242880; // 5MB default
     this.maxRetries = opts.maxRetries || 0;   // default to no retry
     this.uploadId = null;
@@ -80,40 +81,21 @@ function AWS(creds) {
     return {
         request: function(method, path, headers) {
         // send credentials and create multipart form
-
-            if(method === 'PUT') {
-
-                return request({
-                   method: 'PUT',
-                   uri: 'http://' + creds.bucket + '.s3.amazonaws.com',
-                   path: path,
-                   headers: headers
-                   }, function(err, resp, body){
-                       console.log(err, resp.statusCode, body);
-                       callback(err, body)
-                });
-
-            } else if(method === 'POST') {
-
-                var form = {};
-                Object.keys(headers).forEach(function(c){
-                    if (c === 'filename' || c === 'bucket') return;
-                    form[c] = headers[c];
-                });
-
-                return request({
-                   method: 'POST',
-                   uri: 'http://' + creds.bucket + '.s3.amazonaws.com',
-                   path: '/'+opts.key,
-                   form: form
-                   }, function(err, resp, body){
-                       console.log(err, resp.statusCode, body);
-                       callback(err, body)
-                });
-            }
+            var form = {};
+            Object.keys(creds).forEach(function(c){
+                if (c === 'filename' || c === 'bucket') return;
+                form[c]= creds[c];
+            });
+            console.log(form, path)
+            console.log(new Buffer(form.policy, 'base64').toString('utf8'))
+            return request({
+               method: method,
+               uri: 'http://' + creds.bucket + '.s3.amazonaws.com',
+               path: path,
+               form: form
+            });
         }
     }
-
 }
 
 /**
@@ -126,7 +108,7 @@ MultiPartUpload.prototype._initiate = function(callback) {
 
     // Handle the xml response
     parse.xmlResponse(req, function(err, body) {
-
+        console.log(err, body)
         if (err) return callback(err);
         if (!body.UploadId) return callback('Invalid upload ID');
 
