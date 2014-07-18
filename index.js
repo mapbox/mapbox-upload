@@ -7,14 +7,16 @@ var http = require('http');
 var url = require('url');
 var fs = require('fs');
 var progress = require('progress-stream');
+var knox = require('knox');
+var mpu = require('knox-mpu');
+var stream = require('stream');
 
 module.exports = upload;
 
 // Returns a progress stream immediately
 function upload(opts) {
     var prog = progress({
-        time: 100,
-        length: fs.statSync(opts.file).size
+        time: 100
     });
 
     try { opts = upload.opts(opts) }
@@ -85,55 +87,73 @@ upload.putfile = function(opts, creds, prog, callback) {
     if (!creds.bucket)
         return upload.error(new Error('"bucket" required in creds'), prog);
 
-    // send credentials and create multipart form
-    var form = new FormData();
-    Object.keys(creds).forEach(function(c){
-        if (c === 'filename' || c === 'bucket') return;
-        form.append(c, creds[c]);
-    });
+    if (opts.stream) {
+        if (!opts.stream instanceof stream) return upload.error(new Error('"stream" must be an stream object'), prog);
+        var st = opts.stream;
+        st.on('length', prog.length);
+    } else {
+        if (!opts.file || typeof opts.file != 'string') return upload.error(new Error('"file" must be an string'), prog);
+        var st = fs.createReadStream(opts.file)
+            .on('error', function(err) {
+                upload.error(err, prog);
+            });
+        prog.length(fs.statSync(opts.file).size);
+    }
 
-    // Set up read for file and start the upload.
-    var st = fs.createReadStream(opts.file)
-        .on('error', function(err) {
-            upload.error(err, prog);
-        });
-    // pass file in as a readstream
-    form.append('file', st, {
-        knownLength: fs.statSync(opts.file).size
-    })
-
-     var req = request({
-        method: 'POST',
-        uri: 'http://' + creds.bucket + '.s3.amazonaws.com',
-        path: '/',
-        headers: form.getCustomHeaders()
-        }, function(err, resp, body){
-            if (err) {
-                return upload.error(err, prog);
-            } else if ([200, 201, 204, 303].indexOf(resp.statusCode) === -1) {
-                var parsed = [
-                    {key:'code', pattern:new RegExp('[^>]+(?=<\\/Code>)', 'g')},
-                    {key:'message', pattern:new RegExp('[^>]+(?=<\\/Message>)', 'g')}
-                ].reduce(function(memo, pair) {
-                    memo[pair.key] = body.match(pair.pattern) || [];
-                    return memo;
-                }, {});
-                var message = 'Error: S3 upload failed. Status: ' + resp.statusCode;
-                if (parsed.code[0] && parsed.message[0])
-                    message += ' (' + parsed.code[0] + ' - ' + parsed.message[0] + ')';
-                return upload.error(new Error(message), prog);
-            }
-            if (callback) return callback && callback();
-            upload.putmap(opts, creds, prog, callback);
+    var client = knox.createClient({
+        token: creds.sessionToken,
+        key: creds.AWSAccessKeyId,
+        secret: creds.secretAccessKey,
+        bucket: creds.bucket
     });
 
     // data is piped through progress-stream first
-    form.pipe(prog).pipe(req)
+    st.pipe(prog);
     prog.on('progress', function(p){
-            prog.emit('stats', p);
+        prog.emit('stats', p);
     });
-    req.on('unpipe', function(){
-        return upload.error(new Error('Upload Canceled'), prog)
+
+    // Set up read for file and start the upload.
+    var upload = new mpu({
+                client: client,
+                objectName: 'testing.mbtiles', // Amazon S3 object name
+                stream: st,
+                batchSize: 1,
+                maxRetries: 2
+            },
+            // Callback handler
+            function(err, body) {
+                console.log(body)
+                // If successful, will return body, containing Location, Bucket, Key, ETag and size of the object
+                /*
+                  {
+                      Location: 'http://Example-Bucket.s3.amazonaws.com/destination.txt',
+                      Bucket: 'Example-Bucket',
+                      Key: 'destination.txt',
+                      ETag: '"3858f62230ac3c915f300c664312c11f-9"',
+                      size: 7242880
+                  }
+                */
+            }
+        );
+    upload.on('initiated', function(err, id){
+        if (err) console.log(err);
+        console.log("upload ID", id);
+    })
+        .on('uploading', function(err, id){
+        if (err) console.log(err);
+        console.log('begin uploading part', id);
+    })
+        .on('uploaded', function(err, id){
+            if (err) console.log(err);
+            console.log('finish uploading part', id);
+    })
+        .on('error', function(err){
+            console.log(err, err.message);
+    })
+        .on('completed', function(err, info){
+             if (err) console.log(err);
+            console.log('finished Uploading!', info);
     });
 };
 
