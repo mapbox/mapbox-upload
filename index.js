@@ -90,70 +90,63 @@ upload.putfile = function(opts, creds, prog, callback) {
     if (opts.stream) {
         if (!opts.stream instanceof stream) return upload.error(new Error('"stream" must be an stream object'), prog);
         var st = opts.stream;
-        st.on('length', prog.length);
+        st.on('length', prog.setLength);
     } else {
         if (!opts.file || typeof opts.file != 'string') return upload.error(new Error('"file" must be an string'), prog);
         var st = fs.createReadStream(opts.file)
             .on('error', function(err) {
                 upload.error(err, prog);
             });
-        prog.length(fs.statSync(opts.file).size);
+        prog.setLength(fs.statSync(opts.file).size);
     }
 
     var client = knox.createClient({
-        token: creds.sessionToken,
+        // token: creds.sessionToken,
         key: creds.AWSAccessKeyId,
-        secret: creds.secretAccessKey,
-        bucket: creds.bucket
+        secret: creds.secret,
+        bucket: creds.bucket,
+        style: 'path'
     });
 
-    // data is piped through progress-stream first
-    st.pipe(prog);
     prog.on('progress', function(p){
         prog.emit('stats', p);
     });
-
     // Set up read for file and start the upload.
-    var upload = new mpu({
-                client: client,
-                objectName: 'testing.mbtiles', // Amazon S3 object name
-                stream: st,
-                batchSize: 1,
-                maxRetries: 2
-            },
-            // Callback handler
-            function(err, body) {
-                console.log(body)
-                // If successful, will return body, containing Location, Bucket, Key, ETag and size of the object
-                /*
-                  {
-                      Location: 'http://Example-Bucket.s3.amazonaws.com/destination.txt',
-                      Bucket: 'Example-Bucket',
-                      Key: 'destination.txt',
-                      ETag: '"3858f62230ac3c915f300c664312c11f-9"',
-                      size: 7242880
-                  }
-                */
-            }
-        );
-    upload.on('initiated', function(err, id){
-        if (err) console.log(err);
+    var mpuUp = new mpu({
+        client: client,
+        objectName: creds.key, // Amazon S3 object name
+        stream: st.pipe(prog),
+        batchSize: 1,
+        maxRetries: 2
+    },
+    // Callback handler
+    function(err, body) {
+        console.log('RESPONSE', body)
+        // If successful, will return body, containing Location, Bucket, Key, ETag and size of the object
+        /*
+          {
+              Location: 'http://Example-Bucket.s3.amazonaws.com/destination.txt',
+              Bucket: 'Example-Bucket',
+              Key: 'destination.txt',
+              ETag: '"3858f62230ac3c915f300c664312c11f-9"',
+              size: 7242880
+          }
+        */
+    });
+    mpuUp.on('initiated', function(id){
         console.log("upload ID", id);
     })
-        .on('uploading', function(err, id){
-        if (err) console.log(err);
+    mpuUp.on('uploading', function(id){
         console.log('begin uploading part', id);
     })
-        .on('uploaded', function(err, id){
-            if (err) console.log(err);
-            console.log('finish uploading part', id);
+    mpuUp.on('uploaded', function(id){
+            console.log('finish uploading', id);
     })
-        .on('error', function(err){
+    mpuUp.on('error', function(err){
             console.log(err, err.message);
     })
-        .on('completed', function(err, info){
-             if (err) console.log(err);
-            console.log('finished Uploading!', info);
+    mpuUp.on('completed', function(info){
+             console.log('finished Uploading!', info);
     });
 };
 
