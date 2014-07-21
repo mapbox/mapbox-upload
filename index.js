@@ -7,8 +7,8 @@ var http = require('http');
 var url = require('url');
 var fs = require('fs');
 var progress = require('progress-stream');
-var knox = require('knox');
-var mpu = require('knox-mpu');
+var mpuUploader = require('s3-upload-stream').Uploader;
+var AWS = require('aws-sdk');
 var stream = require('stream');
 
 module.exports = upload;
@@ -100,53 +100,41 @@ upload.putfile = function(opts, creds, prog, callback) {
         prog.setLength(fs.statSync(opts.file).size);
     }
 
-    var client = knox.createClient({
-        // token: creds.sessionToken,
-        key: creds.AWSAccessKeyId,
-        secret: creds.secret,
-        bucket: creds.bucket,
-        style: 'path'
-    });
-
     prog.on('progress', function(p){
+        // console.log('progress', p)
         prog.emit('stats', p);
     });
     // Set up read for file and start the upload.
-    var mpuUp = new mpu({
-        client: client,
-        objectName: creds.key, // Amazon S3 object name
-        stream: st.pipe(prog),
-        batchSize: 1,
-        maxRetries: 2
+
+    // CURRENT CREDS USE SIGNED PROFILE.
+    // LOCAL CREDS IS A STOPGAP FOR TESTING MPU
+    // UNTIL API-CORE CREDENTIALS IS UPDATED FOR STS
+    var client = new AWS.S3({
+        accessKeyId: process.env.AWS_KEY,
+        secretAccessKey: process.env.AWS_SECRET,
+        // sessionToken: ,
+        region: "us-east-1"
+    });
+    // Set up read for file and start the upload.
+    var mpu = new mpuUploader({
+        s3Client: client
+    }, {
+        Bucket: creds.bucket,
+        Key: creds.key // Amazon S3 object name
     },
     // Callback handler
-    function(err, body) {
-        console.log('RESPONSE', body)
-        // If successful, will return body, containing Location, Bucket, Key, ETag and size of the object
-        /*
-          {
-              Location: 'http://Example-Bucket.s3.amazonaws.com/destination.txt',
-              Bucket: 'Example-Bucket',
-              Key: 'destination.txt',
-              ETag: '"3858f62230ac3c915f300c664312c11f-9"',
-              size: 7242880
-          }
-        */
-    });
-    mpuUp.on('initiated', function(id){
-        console.log("upload ID", id);
-    })
-    mpuUp.on('uploading', function(id){
-        console.log('begin uploading part', id);
-    })
-    mpuUp.on('uploaded', function(id){
-            console.log('finish uploading', id);
-    })
-    mpuUp.on('error', function(err){
-            console.log(err, err.message);
-    })
-    mpuUp.on('completed', function(info){
-             console.log('finished Uploading!', info);
+    function(err, uploadStream) {
+        if (err) console.log(err);
+
+        uploadStream.on('uploaded', function (data) {
+            // console.log('done', data);
+            upload.putmap(opts, creds, prog, callback);
+        });
+
+        uploadStream.on('chunk', function (data) {
+            // console.log('chunky', data);
+        });
+        st.pipe(prog).pipe(uploadStream)
     });
 };
 

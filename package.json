@@ -17,8 +17,8 @@
     "progress-stream": "0.5.0",
     "request": "2.37.x",
     "xml2js": "^0.4.4",
-    "knox": "0.9.x",
-    "knox-mpu": "0.1.x"
+    "s3-upload-stream": "0.4.x",
+    "aws-sdk": "1.18.0"
   },
   "devDependencies": {
     "mocha": "1.12.x"

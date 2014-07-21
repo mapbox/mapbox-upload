@@ -76,15 +76,21 @@ describe('upload', function() {
     });
     it('progress reporting', function(done) {
         var prog = upload(opts());
-        prog.once('progress', function(p){
-            assert.equal(100, p.percentage);
-            assert.equal(69632, p.length);
-            // assert that multipart form is the right size,
-            // adds 1401 bytes to transfer
-            assert.equal(71033, p.transferred);
-            assert.equal(0, p.remaining);
-            assert.equal(0, p.eta);
+        this.timeout(0);
+        prog.on('error', function(){
+            assert.ifError(err);
+        })
+        prog.on('finished', function(){
             done();
+        })
+        prog.on('progress', function(p){
+            if (p.percentage === 100) {
+                assert.equal(100, p.percentage);
+                assert.equal(69632, p.length);
+                assert.equal(69632, p.transferred);
+                assert.equal(0, p.remaining);
+                assert.equal(0, p.eta);
+            }
         })
     });
 });
@@ -192,6 +198,8 @@ describe('upload.putfile', function() {
         upload.putfile(opts(), { key: '_pending' }, prog, cb);
     });
     it('good creds', function(done) {
+        // CURRENTLY FAILING: b/c of confused credentials
+        this.timeout(0);
         function cb(err) {
             assert.ifError(err);
             request.head({

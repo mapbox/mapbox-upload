@@ -1,11 +1,11 @@
-var knox = require('knox');
-var mpu = require('knox-mpu');
-var stream = require('stream');
 var fs = require('fs');
+var stream = require('stream');
+var AWS = require('aws-sdk');
 var progress = require('progress-stream');
+var mpuUploader = require('s3-upload-stream').Uploader;
 
 var prog = progress({
-        time: 50
+        time: 100
     });
 
 var st = fs.createReadStream('./test/test.mbtiles')
@@ -15,53 +15,33 @@ var st = fs.createReadStream('./test/test.mbtiles')
     prog.setLength(fs.statSync('./test/test.mbtiles').size);
 
 prog.on('progress', function(p){
-    console.log(p)
+    console.log('PROGRESS:', p)
 });
 
-var client = knox.createClient({
-    // token: creds.sessionToken,
-    key: '***REMOVED***',
-    secret: '***REMOVED***',
-    bucket: 'mapbox-upload-testing',
-    style: 'path'
+var client = new AWS.S3({
+    accessKeyId: process.env.AWS_KEY,
+    secretAccessKey: process.env.AWS_SECRET,
+    // sessionToken: ,
+    region: "us-east-1"
 });
-
 
 // Set up read for file and start the upload.
-var mpuUp = new mpu({
-        client: client,
-        objectName: '_pending/test/badad68cc541a9b339565c1eb74d28cf', // Amazon S3 object name
-        stream: st.pipe(prog),
-        batchSize: 1,
-        maxRetries: 2
+var mpu = new mpuUploader({
+        s3Client: client
+    }, {
+        Bucket: 'mapbox-upload-testing',
+        Key: '_pending/test/badad68cc541a9b339565c1eb74d28cf' // Amazon S3 object name
     },
     // Callback handler
-    function(err, body) {
-        console.log('RESPONSE', body)
-        // If successful, will return body, containing Location, Bucket, Key, ETag and size of the object
-        /*
-          {
-              Location: 'http://Example-Bucket.s3.amazonaws.com/destination.txt',
-              Bucket: 'Example-Bucket',
-              Key: 'destination.txt',
-              ETag: '"3858f62230ac3c915f300c664312c11f-9"',
-              size: 7242880
-          }
-        */
-    });
+    function(err, uploadStream) {
+        if (err) console.log(err);
 
-mpuUp.on('initiated', function(id){
-    console.log("upload ID", id);
-})
-mpuUp.on('uploading', function(id){
-    console.log('begin uploading part', id);
-})
-mpuUp.on('uploaded', function(id){
-        console.log('finish uploading', id);
-})
-mpuUp.on('error', function(err){
-        console.log(err, err.message);
-})
-mpuUp.on('completed', function(info){
-         console.log('finished Uploading!', info);
-});
+        uploadStream.on('uploaded', function (data) {
+            console.log('done', data);
+        });
+
+        uploadStream.on('chunk', function (data) {
+            console.log('chunky', data);
+        });
+    st.pipe(prog).pipe(uploadStream)
+    });
