@@ -55,7 +55,7 @@ upload.getcreds = function(opts, prog, callback) {
     try { opts = upload.opts(opts) }
     catch(err) { return upload.error(err, prog) }
     request.get({
-        uri: util.format('%s/api/upload/%s?access_token=%s', opts.mapbox, opts.account, opts.accesstoken),
+        uri: util.format('%s/v2/upload/%s?access_token=%s', opts.mapbox, opts.account, opts.accesstoken),
         headers: { 'Host': url.parse(opts.mapbox).host },
         proxy: opts.proxy
     }, function(err, resp, body) {
@@ -105,14 +105,10 @@ upload.putfile = function(opts, creds, prog, callback) {
         prog.emit('stats', p);
     });
     // Set up read for file and start the upload.
-
-    // CURRENT CREDS USE SIGNED PROFILE.
-    // LOCAL CREDS IS A STOPGAP FOR TESTING MPU
-    // UNTIL API-CORE CREDENTIALS IS UPDATED FOR STS
     var client = new AWS.S3({
-        accessKeyId: process.env.AWS_KEY,
-        secretAccessKey: process.env.AWS_SECRET,
-        // sessionToken: ,
+        accessKeyId: creds.accessKeyId,
+        secretAccessKey: creds.secretAccessKey,
+        sessionToken: creds.sessionToken,
         region: "us-east-1"
     });
     // Set up read for file and start the upload.
