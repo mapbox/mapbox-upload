@@ -34,8 +34,8 @@ upload.opts = function(opts) {
     opts = opts || {};
     opts.proxy = opts.proxy || process.env.HTTP_PROXY;
     opts.mapbox = opts.mapbox || upload.MAPBOX;
-    if (!opts.file)
-        throw new Error('"file" option required');
+    if (!opts.file && !opts.stream)
+        throw new Error('"file" or "stream" option required');
     if (!opts.account)
         throw new Error('"account" option required');
     if (!opts.accesstoken)
@@ -90,7 +90,10 @@ upload.putfile = function(opts, creds, prog, callback) {
     if (opts.stream) {
         if (!opts.stream instanceof stream) return upload.error(new Error('"stream" must be an stream object'), prog);
         var st = opts.stream;
-        st.on('length', prog.setLength);
+
+        // if length isn't set progress-stream will not report progress
+        if (opts.length) prog.setLength(opts.length)
+        else st.on('length', prog.setLength);
     } else {
         if (!opts.file || typeof opts.file != 'string') return upload.error(new Error('"file" must be an string'), prog);
         var st = fs.createReadStream(opts.file)
@@ -101,7 +104,6 @@ upload.putfile = function(opts, creds, prog, callback) {
     }
 
     prog.on('progress', function(p){
-        // console.log('progress', p)
         prog.emit('stats', p);
     });
     // Set up read for file and start the upload.

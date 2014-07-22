@@ -1,4 +1,5 @@
 var http = require('http');
+var fs = require('fs');
 var assert = require('assert');
 var progress = require('progress-stream');
 var request = require('request');
@@ -56,7 +57,7 @@ function opts(extend) {
 
 describe('options', function() {
     it('upload.opts', function() {
-        assert.throws(function() { upload.opts({}) }, /"file" option required/);
+        assert.throws(function() { upload.opts({}) }, /"file" or "stream" option required/);
         assert.throws(function() { upload.opts({ file:'somepath' }) }, /"account" option required/);
         assert.throws(function() { upload.opts({ file:'somepath', account:'test' }) }, /"accesstoken" option required/);
         assert.throws(function() { upload.opts({ file:'somepath', account:'test', accesstoken:'validtoken' }) }, /"mapid" option required/);
@@ -65,7 +66,7 @@ describe('options', function() {
     });
 });
 
-describe('upload', function() {
+describe('upload from file', function() {
     var server;
     before(function(done) {
         server = Server();
@@ -77,7 +78,41 @@ describe('upload', function() {
     it('progress reporting', function(done) {
         var prog = upload(opts());
         this.timeout(0);
-        prog.on('error', function(){
+        prog.on('error', function(err){
+            assert.ifError(err);
+        })
+        prog.on('finished', function(){
+            done();
+        })
+        prog.on('progress', function(p){
+            if (p.percentage === 100) {
+                assert.equal(100, p.percentage);
+                assert.equal(69632, p.length);
+                assert.equal(69632, p.transferred);
+                assert.equal(0, p.remaining);
+                assert.equal(0, p.eta);
+            }
+        })
+    });
+});
+
+describe('upload from stream', function() {
+    var server;
+    before(function(done) {
+        server = Server();
+        done();
+    });
+    after(function(done) {
+        server.close(done);
+    });
+    it('progress reporting', function(done) {
+        var options = opts();
+        options.stream = fs.createReadStream(options.file)
+        options.length = fs.statSync(options.file).size;
+        options.file = null;
+        var prog = upload(options);
+        this.timeout(0);
+        prog.on('error', function(err){
             assert.ifError(err);
         })
         prog.on('finished', function(){
