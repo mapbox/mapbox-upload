@@ -247,8 +247,7 @@ describe('upload.putfile', function() {
         prog.once('error', cb);
         upload.putfile(opts(), { key: '_pending' }, prog, cb);
     });
-    it('good creds', function(done) {
-        // CURRENTLY FAILING: b/c of confused credentials
+    it('good creds (file)', function(done) {
         this.timeout(0);
         upload.testcreds(function(err, creds) {
             assert.ifError(err);
