@@ -1,36 +1,17 @@
 {
     "AWSTemplateFormatVersion": "2010-09-09",
-    "Description": "carmen-cache build resources",
+    "Description": "mapbox-upload test user",
     "Resources": {
-        "BuildUser": {
+        "TestUser": {
             "Type": "AWS::IAM::User",
             "Properties": {
                 "Policies": [
                     {
-                        "PolicyName": "list",
+                        "PolicyName": "upload",
                         "PolicyDocument": {
                             "Statement": [
                                 {
                                     "Action": [
-                                        "s3:ListBucket"
-                                    ],
-                                    "Effect": "Allow",
-                                    "Resource": [
-                                        "arn:aws:s3:::mapbox-upload-testing"
-                                    ]
-                                }
-                            ]
-                        }
-                    },
-                    {
-                        "PolicyName": "build",
-                        "PolicyDocument": {
-                            "Statement": [
-                                {
-                                    "Action": [
-                                        "s3:DeleteObject",
-                                        "s3:GetObject",
-                                        "s3:GetObjectAcl",
                                         "s3:PutObject",
                                         "s3:PutObjectAcl"
                                     ],
@@ -41,15 +22,29 @@
                                 }
                             ]
                         }
+                    },
+                    {
+                        "PolicyName": "fedtoken",
+                        "PolicyDocument": {
+                            "Statement": [
+                                {
+                                    "Action": [
+                                        "sts:GetFederationToken"
+                                    ],
+                                    "Effect": "Allow",
+                                    "Resource": "*"
+                                }
+                            ]
+                        }
                     }
                 ]
             }
         },
-        "BuildUserKey": {
+        "TestUserKey": {
             "Type": "AWS::IAM::AccessKey",
             "Properties": {
                 "UserName": {
-                    "Ref": "BuildUser"
+                    "Ref": "TestUser"
                 }
             }
         }
@@ -57,13 +52,13 @@
     "Outputs": {
         "AccessKeyId": {
             "Value": {
-                "Ref": "BuildUserKey"
+                "Ref": "TestUserKey"
             }
         },
         "SecretAccessKey": {
             "Value": {
                 "Fn::GetAtt": [ 
-                    "BuildUserKey",
+                    "TestUserKey",
                     "SecretAccessKey"
                 ]
             }
