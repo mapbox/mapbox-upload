@@ -17,9 +17,7 @@ module.exports = upload;
 function upload(opts) {
     var prog;
     if (opts.prog && opts.prog instanceof stream.Duplex) prog = opts.prog;
-    else prog = progress({
-            time: 100
-        });
+    else prog = progress({ time: 100 });
 
     try { opts = upload.opts(opts) }
     catch(err) { return upload.error(err, prog) }
