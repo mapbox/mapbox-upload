@@ -1,5 +1,4 @@
 var request = require('request');
-var FormData = require('form-data');
 var crypto = require('crypto');
 var util = require('util');
 var path = require('path');
