@@ -57,8 +57,17 @@ progress.once('end', function(){
 
 ```
 
+
+### Options
+
+#### stream
+A [`stream`](http://nodejs.org/api/stream.html) object can be passed in instead of `{file: filepath}`.
+`length` option is recommended for accurate progress-stream reporting. If length is unknown, it can be updated after upload has begun by emitting a `length` event from the `stream` object.
+
 ## Tests
 
 ```
 npm test
 ```
+
+tests require env variables `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` to generate test credentials
