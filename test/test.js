@@ -306,7 +306,7 @@ describe('upload.putmap', function() {
                 done && done() || (done = false);
             };
             var prog = progress();
-            prog.once('putmap', function(body) {
+            prog.once('finished', function(body) {
                 assert.deepEqual(body, {});
                 done && done() || (done = false);
             });

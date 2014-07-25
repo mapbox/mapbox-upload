@@ -105,7 +105,7 @@ upload.putfile = function(opts, creds, prog, callback) {
     prog.on('progress', function(p){
         prog.emit('stats', p);
     });
-    // Set up read for file and start the upload.
+    // Set up aws client
     var client = new AWS.S3({
         accessKeyId: creds.accessKeyId,
         secretAccessKey: creds.secretAccessKey,
@@ -119,20 +119,15 @@ upload.putfile = function(opts, creds, prog, callback) {
         ACL: 'public-read',
         Bucket: creds.bucket,
         Key: creds.key // Amazon S3 object name
-    },
-    // Callback handler
-    function(err, uploadStream) {
-        if (err) console.log(err);
+    }, function(err, uploadStream) {
+        if (err) return upload.err(err, prog);
 
         uploadStream.on('uploaded', function (data) {
             // console.log('done', data);
             upload.putmap(opts, creds, prog, callback);
         });
 
-        uploadStream.on('chunk', function (data) {
-            // console.log('chunky', data);
-        });
-        st.pipe(prog).pipe(uploadStream)
+        st.pipe(prog).pipe(uploadStream);
     });
 };
 

@@ -51,7 +51,7 @@ progress.on('progress', function(p){
 	// Do something with progress-stream object, like display upload status
 });
 
-progress.once('end', function(){
+progress.once('finished', function(){
 	// Upload has completed but is likely queued for processing and not yet available on Mapbox.
 });
 
