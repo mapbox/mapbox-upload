@@ -3,6 +3,11 @@ language: node_js
 node_js:
   - "0.10"
 
+env:
+  global:
+  - secure: "LWFWraQ9WDKM5Vk5L1mIdk5u0IXyOAQ+qtvCn19Pc5JTY0w6rHYc5ZZycdGVp4z7R0OgldlYwL0/briKT4Q74B86hDiK4SpyNyRaGIlLKhOwKroS1CtHn8OsMz5V6cXv1rlMrHuLWG5QBnDlEXj1iB6rRbrXXKtvs/l1DqtytCk="
+  - secure: "Q5Y361iG99E274DXHM6asi8VvK9LgBpUOLdLoB2THTSc9J8lS3XWAKCIR3eUI8mjbmqvPsEBEwDWDRVZAXvmmVMp3H2UxgSdM2Nlr6WLx3D6p0L6Byicr70kmJ6GH994wBT67t7fSvGeCIdh2TbIxrBeO/Kbcu8eODqTy3mrNRQ="
+
 install:
  - npm install
  - npm ls
