@@ -1,3 +1,5 @@
+![travis](https://travis-ci.org/mapbox/mapbox-upload.svg)
+
 mapbox-upload
 -------------
 Library for interfacing with the Mapbox upload API.
