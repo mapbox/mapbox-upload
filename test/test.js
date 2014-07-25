@@ -27,7 +27,7 @@ function Server() {
             res.end(JSON.stringify(creds));
             break;
         */
-        case '/v2/upload/test?access_token=validtoken':
+        case '/v1/upload/test?access_token=validtoken':
             upload.testcreds(function(err, data) {
                 if (err) throw err;
                 res.writeHead(200);
