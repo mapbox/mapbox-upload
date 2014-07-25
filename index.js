@@ -54,7 +54,7 @@ upload.getcreds = function(opts, prog, callback) {
     try { opts = upload.opts(opts) }
     catch(err) { return upload.error(err, prog) }
     request.get({
-        uri: util.format('%s/v2/upload/%s?access_token=%s', opts.mapbox, opts.account, opts.accesstoken),
+        uri: util.format('%s/v1/upload/%s?access_token=%s', opts.mapbox, opts.account, opts.accesstoken),
         headers: { 'Host': url.parse(opts.mapbox).host },
         proxy: opts.proxy
     }, function(err, resp, body) {
