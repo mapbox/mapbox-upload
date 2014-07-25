@@ -4,7 +4,6 @@ var assert = require('assert');
 var progress = require('progress-stream');
 var request = require('request');
 var upload = require(__dirname + '/../index.js');
-var creds = require('./test.creds.js');
 upload.MAPBOX = 'http://localhost:3000';
 
 function Server() {
@@ -22,9 +21,18 @@ function Server() {
             res.writeHead(200);
             res.end(JSON.stringify({key:'bar'}));
             break;
+        /*
         case '/api/upload/test?access_token=validtoken':
             res.writeHead(200);
             res.end(JSON.stringify(creds));
+            break;
+        */
+        case '/v2/upload/test?access_token=validtoken':
+            upload.testcreds(function(err, data) {
+                if (err) throw err;
+                res.writeHead(200);
+                res.end(JSON.stringify(data));
+            });
             break;
         case '/api/Map/test.upload?access_token=validtoken':
             if (req.method === 'GET') {
@@ -159,7 +167,7 @@ describe('upload.getcreds', function() {
     });
     it('failed badjson', function(done) {
         function cb(err, creds) {
-            assert.equal('Unexpected token h', err.message);
+            assert.equal('Not found', err.message);
             done && done() || (done = false);
         };
         var prog = progress();
@@ -168,7 +176,7 @@ describe('upload.getcreds', function() {
     });
     it('failed no key', function(done) {
         function cb(err, creds) {
-            assert.equal('Invalid creds', err.message);
+            assert.equal('Not found', err.message);
             done && done() || (done = false);
         };
         var prog = progress();
@@ -177,7 +185,7 @@ describe('upload.getcreds', function() {
     });
     it('failed no bucket', function(done) {
         function cb(err, creds) {
-            assert.equal('Invalid creds', err.message);
+            assert.equal('Not found', err.message);
             done && done() || (done = false);
         };
         var prog = progress();
@@ -188,7 +196,14 @@ describe('upload.getcreds', function() {
         var prog = progress();
         function cb(err, c){
             assert.ifError(err);
-            assert.deepEqual(creds, c);
+            assert.equal(c.bucket, 'mapbox-upload-testing');
+            assert.deepEqual(Object.keys(c), [
+                'bucket',
+                'key',
+                'accessKeyId',
+                'secretAccessKey',
+                'sessionToken'
+            ]);
             done && done() || (done = false);
         };
         upload.getcreds(opts(), prog, cb);
@@ -235,21 +250,24 @@ describe('upload.putfile', function() {
     it('good creds', function(done) {
         // CURRENTLY FAILING: b/c of confused credentials
         this.timeout(0);
-        function cb(err) {
+        upload.testcreds(function(err, creds) {
             assert.ifError(err);
-            request.head({
-                uri: 'http://mapbox-upload-testing.s3.amazonaws.com/' + creds.key
-            }, function(err, res, body) {
+            function check(err) {
                 assert.ifError(err);
-                assert.equal(200, res.statusCode);
-                assert.equal(69632, res.headers['content-length']);
-                assert.ok(+new Date(res.headers['last-modified']) > +new Date - 60e3);
-                prog.called = true;
-                done && done() || (done = false);
-            });
-        };
-        var prog = progress();
-        upload.putfile(opts(), creds, prog, cb);
+                request.head({
+                    uri: 'http://mapbox-upload-testing.s3.amazonaws.com/' + creds.key
+                }, function(err, res, body) {
+                    assert.ifError(err);
+                    assert.equal(200, res.statusCode);
+                    assert.equal(69632, res.headers['content-length']);
+                    assert.ok(+new Date(res.headers['last-modified']) > +new Date - 60e3);
+                    prog.called = true;
+                    done && done() || (done = false);
+                });
+            };
+            var prog = progress();
+            upload.putfile(opts(), creds, prog, check);
+        });
     });
 });
 
@@ -281,26 +299,32 @@ describe('upload.putmap', function() {
         upload.putmap(opts(), { key: '_pending' }, prog, cb);
     });
     it('good creds', function(done) {
-        function cb(err, body) {
+        upload.testcreds(function(err, params) {
             assert.ifError(err);
-            assert.deepEqual(body, {});
-            done && done() || (done = false);
-        };
-        var prog = progress();
-        prog.once('putmap', function(body) {
-            assert.deepEqual(body, {});
-            done && done() || (done = false);
+            function cb(err, body) {
+                assert.ifError(err);
+                assert.deepEqual(body, {});
+                done && done() || (done = false);
+            };
+            var prog = progress();
+            prog.once('putmap', function(body) {
+                assert.deepEqual(body, {});
+                done && done() || (done = false);
+            });
+            upload.putmap(opts(), params, prog, cb);
         });
-        upload.putmap(opts(), creds, prog, cb);
     });
     it('bad creds', function(done) {
-        function cb(err) {
-            assert.equal(404, err.code);
-            assert.equal('Not found', err.message);
-            done && done() || (done = false);
-        };
-        var prog = progress();
-        prog.on('error', cb);
-        upload.putmap(opts({accesstoken:'invalid'}), creds, prog, cb);
+        upload.testcreds(function(err, params) {
+            assert.ifError(err);
+            function cb(err) {
+                assert.equal(404, err.code);
+                assert.equal('Not found', err.message);
+                done && done() || (done = false);
+            };
+            var prog = progress();
+            prog.on('error', cb);
+            upload.putmap(opts({accesstoken:'invalid'}), params, prog, cb);
+        });
     });
 });
