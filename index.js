@@ -187,6 +187,7 @@ upload.putmap = function(opts, creds, prog, callback) {
 };
 
 // Generate test-friendly upload credentials.
+// Objects from the testing bucket are deleted via lifecycle rule daily.
 upload.testcreds = function(callback) {
     if (!process.env.AWS_ACCESS_KEY_ID)
         return callback(new Error('env var AWS_ACCESS_KEY_ID required'));
