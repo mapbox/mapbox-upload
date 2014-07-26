@@ -172,7 +172,7 @@ upload.putmap = function(opts, creds, prog, callback) {
                 err.code = res.statusCode;
                 return upload.error(err, prog);
             }
-            prog.emit('finished');
+            prog.emit('finished', body);
             return callback && callback(null, body);
         });
     });
