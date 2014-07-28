@@ -51,14 +51,23 @@ progress.on('progress', function(p){
 	// Do something with progress-stream object, like display upload status
 });
 
-progress.once('end', function(){
+progress.once('finished', function(){
 	// Upload has completed but is likely queued for processing and not yet available on Mapbox.
 });
 
 ```
+
+
+### Options
+
+#### stream
+A [`stream`](http://nodejs.org/api/stream.html) object can be passed in instead of `{file: filepath}`.
+`length` option is recommended for accurate progress-stream reporting. If length is unknown, it can be updated after upload has begun by emitting a `length` event from the `stream` object.
 
 ## Tests
 
 ```
 npm test
 ```
+
+tests require env variables `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` to generate test credentials

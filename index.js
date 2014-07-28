@@ -1,5 +1,4 @@
 var request = require('request');
-var FormData = require('form-data');
 var crypto = require('crypto');
 var util = require('util');
 var path = require('path');
@@ -7,15 +6,15 @@ var http = require('http');
 var url = require('url');
 var fs = require('fs');
 var progress = require('progress-stream');
+var mpuUploader = require('s3-upload-stream').Uploader;
+var AWS = require('aws-sdk');
+var stream = require('stream');
 
 module.exports = upload;
 
 // Returns a progress stream immediately
 function upload(opts) {
-    var prog = progress({
-        time: 100,
-        length: fs.statSync(opts.file).size
-    });
+    var prog = progress({ time: 100 });
 
     try { opts = upload.opts(opts) }
     catch(err) { return upload.error(err, prog) }
@@ -32,8 +31,8 @@ upload.opts = function(opts) {
     opts = opts || {};
     opts.proxy = opts.proxy || process.env.HTTP_PROXY;
     opts.mapbox = opts.mapbox || upload.MAPBOX;
-    if (!opts.file)
-        throw new Error('"file" option required');
+    if (!opts.file && !opts.stream)
+        throw new Error('"file" or "stream" option required');
     if (!opts.account)
         throw new Error('"account" option required');
     if (!opts.accesstoken)
@@ -53,7 +52,7 @@ upload.getcreds = function(opts, prog, callback) {
     try { opts = upload.opts(opts) }
     catch(err) { return upload.error(err, prog) }
     request.get({
-        uri: util.format('%s/api/upload/%s?access_token=%s', opts.mapbox, opts.account, opts.accesstoken),
+        uri: util.format('%s/v1/upload/%s?access_token=%s', opts.mapbox, opts.account, opts.accesstoken),
         headers: { 'Host': url.parse(opts.mapbox).host },
         proxy: opts.proxy
     }, function(err, resp, body) {
@@ -85,55 +84,52 @@ upload.putfile = function(opts, creds, prog, callback) {
     if (!creds.bucket)
         return upload.error(new Error('"bucket" required in creds'), prog);
 
-    // send credentials and create multipart form
-    var form = new FormData();
-    Object.keys(creds).forEach(function(c){
-        if (c === 'filename' || c === 'bucket') return;
-        form.append(c, creds[c]);
-    });
+    if (opts.stream) {
+        if (!opts.stream instanceof stream) return upload.error(new Error('"stream" must be an stream object'), prog);
+        var st = opts.stream;
 
-    // Set up read for file and start the upload.
-    var st = fs.createReadStream(opts.file)
-        .on('error', function(err) {
-            upload.error(err, prog);
-        });
-    // pass file in as a readstream
-    form.append('file', st, {
-        knownLength: fs.statSync(opts.file).size
-    })
+        // if length isn't set progress-stream will not report progress
+        if (opts.length) prog.setLength(opts.length)
+        else st.on('length', prog.setLength);
+    } else {
+        if (!opts.file || typeof opts.file != 'string') return upload.error(new Error('"file" must be an string'), prog);
+        var st = fs.createReadStream(opts.file)
+            .on('error', function(err) {
+                upload.error(err, prog);
+            });
+        prog.setLength(fs.statSync(opts.file).size);
+    }
 
-     var req = request({
-        method: 'POST',
-        uri: 'http://' + creds.bucket + '.s3.amazonaws.com',
-        path: '/',
-        headers: form.getCustomHeaders()
-        }, function(err, resp, body){
-            if (err) {
-                return upload.error(err, prog);
-            } else if ([200, 201, 204, 303].indexOf(resp.statusCode) === -1) {
-                var parsed = [
-                    {key:'code', pattern:new RegExp('[^>]+(?=<\\/Code>)', 'g')},
-                    {key:'message', pattern:new RegExp('[^>]+(?=<\\/Message>)', 'g')}
-                ].reduce(function(memo, pair) {
-                    memo[pair.key] = body.match(pair.pattern) || [];
-                    return memo;
-                }, {});
-                var message = 'Error: S3 upload failed. Status: ' + resp.statusCode;
-                if (parsed.code[0] && parsed.message[0])
-                    message += ' (' + parsed.code[0] + ' - ' + parsed.message[0] + ')';
-                return upload.error(new Error(message), prog);
-            }
-            if (callback) return callback && callback();
-            upload.putmap(opts, creds, prog, callback);
-    });
-
-    // data is piped through progress-stream first
-    form.pipe(prog).pipe(req)
     prog.on('progress', function(p){
-            prog.emit('stats', p);
+        prog.emit('stats', p);
     });
-    req.on('unpipe', function(){
-        return upload.error(new Error('Upload Canceled'), prog)
+    // Set up aws client
+    var client = new AWS.S3({
+        accessKeyId: creds.accessKeyId,
+        secretAccessKey: creds.secretAccessKey,
+        sessionToken: creds.sessionToken,
+        region: "us-east-1"
+    });
+    // Set up read for file and start the upload.
+    var mpu = new mpuUploader({
+        s3Client: client
+    }, {
+        ACL: 'public-read',
+        Bucket: creds.bucket,
+        Key: creds.key // Amazon S3 object name
+    }, function(err, uploadStream) {
+        if (err) return upload.err(err, prog);
+
+        uploadStream.on('error', function(e){
+            e = new Error(e || 'Upload to Mapbox.com failed');
+            return upload.err(e, prog);
+        });
+
+        uploadStream.on('uploaded', function (data) {
+            upload.putmap(opts, creds, prog, callback);
+        });
+
+        st.pipe(prog).pipe(uploadStream);
     });
 };
 
@@ -178,8 +174,45 @@ upload.putmap = function(opts, creds, prog, callback) {
                 err.code = res.statusCode;
                 return upload.error(err, prog);
             }
-            prog.emit('finished');
+            prog.emit('finished', body);
             return callback && callback(null, body);
         });
     });
 };
+
+// Generate test-friendly upload credentials.
+// Objects from the testing bucket are deleted via lifecycle rule daily.
+upload.testcreds = function(callback) {
+    if (!process.env.AWS_ACCESS_KEY_ID)
+        return callback(new Error('env var AWS_ACCESS_KEY_ID required'));
+    if (!process.env.AWS_SECRET_ACCESS_KEY)
+        return callback(new Error('env var AWS_SECRET_ACCESS_KEY required'));
+    var sts = new AWS.STS({
+        accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+        region:'us-east-1'
+    });
+    var md5 = crypto.createHash('md5').update(Math.random().toString()).digest('hex');
+    var key = '_pending/test/' + md5;
+    sts.getFederationToken({
+        Name: 'mapbox-upload',
+        Policy: JSON.stringify({
+            Statement: [{
+                Action: ['s3:PutObject','s3:PutObjectAcl'],
+                Effect: 'Allow',
+                Resource: ['arn:aws:s3:::mapbox-upload-testing/' + key]
+            }]
+        }),
+        DurationSeconds: 3600
+    }, function(err, data) {
+        if (err) return callback(err);
+        callback(null, {
+            bucket: 'mapbox-upload-testing',
+            key: key,
+            accessKeyId: data.Credentials.AccessKeyId,
+            secretAccessKey: data.Credentials.SecretAccessKey,
+            sessionToken: data.Credentials.SessionToken
+        });
+    });
+};
+
