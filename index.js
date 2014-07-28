@@ -120,8 +120,12 @@ upload.putfile = function(opts, creds, prog, callback) {
     }, function(err, uploadStream) {
         if (err) return upload.err(err, prog);
 
+        uploadStream.on('error', function(e){
+            e = new Error(e || 'Upload to Mapbox.com failed');
+            return upload.err(e, prog);
+        });
+
         uploadStream.on('uploaded', function (data) {
-            // console.log('done', data);
             upload.putmap(opts, creds, prog, callback);
         });
 
