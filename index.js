@@ -118,11 +118,11 @@ upload.putfile = function(opts, creds, prog, callback) {
         Bucket: creds.bucket,
         Key: creds.key // Amazon S3 object name
     }, function(err, uploadStream) {
-        if (err) return upload.err(err, prog);
+        if (err) return upload.error(err, prog);
 
         uploadStream.on('error', function(e){
             e = new Error(e || 'Upload to Mapbox.com failed');
-            return upload.err(e, prog);
+            return upload.error(e, prog);
         });
 
         uploadStream.on('uploaded', function (data) {
