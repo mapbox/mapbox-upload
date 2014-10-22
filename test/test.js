@@ -27,14 +27,14 @@ function Server() {
             res.end(JSON.stringify(creds));
             break;
         */
-        case '/v1/upload/test?access_token=validtoken':
+        case '/v1/uploads/test?access_token=validtoken':
             upload.testcreds(function(err, data) {
                 if (err) throw err;
                 res.writeHead(200);
                 res.end(JSON.stringify(data));
             });
             break;
-        case '/api/Map/test.upload?access_token=validtoken':
+        case '/v1/uploads/test.upload?access_token=validtoken':
             if (req.method === 'GET') {
                 res.writeHead(404);
                 res.end(JSON.stringify({message:'Not found'}));

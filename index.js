@@ -52,7 +52,7 @@ upload.getcreds = function(opts, prog, callback) {
     try { opts = upload.opts(opts) }
     catch(err) { return upload.error(err, prog) }
     request.get({
-        uri: util.format('%s/v1/upload/%s?access_token=%s', opts.mapbox, opts.account, opts.accesstoken),
+        uri: util.format('%s/v1/uploads/%s?access_token=%s', opts.mapbox, opts.account, opts.accesstoken),
         headers: { 'Host': url.parse(opts.mapbox).host },
         proxy: opts.proxy
     }, function(err, resp, body) {
@@ -142,7 +142,7 @@ upload.putmap = function(opts, creds, prog, callback) {
     if (!creds.bucket)
         return upload.error(new Error('"bucket" required in creds'), prog);
 
-    var uri = util.format('%s/api/Map/%s?access_token=%s', opts.mapbox, opts.mapid, opts.accesstoken);
+    var uri = util.format('%s/v1/uploads/%s?access_token=%s', opts.mapbox, opts.mapid, opts.accesstoken);
     request.get({ uri: uri, proxy: opts.proxy }, function(err, res, body) {
         if (err)
             return upload.error(err, prog);
