@@ -9,15 +9,15 @@ upload.MAPBOX = 'http://localhost:3000';
 function Server() {
     return http.createServer(function (req, res) {
         switch (req.url) {
-        case '/badjson/v1/upload/test?access_token=validtoken':
+        case '/badjson/v1/uploads/test/credentials?access_token=validtoken':
             res.writeHead(200);
             res.end("hello world");
             break;
-        case '/nokey/v1/upload/test?access_token=validtoken':
+        case '/nokey/v1/uploads/test/credentials?access_token=validtoken':
             res.writeHead(200);
             res.end(JSON.stringify({bucket:'bar'}));
             break;
-        case '/nobucket/v1/upload/test?access_token=validtoken':
+        case '/nobucket/v1/uploads/test/credentials?access_token=validtoken':
             res.writeHead(200);
             res.end(JSON.stringify({key:'bar'}));
             break;
@@ -27,7 +27,7 @@ function Server() {
             res.end(JSON.stringify(creds));
             break;
         */
-        case '/v1/uploads/test?access_token=validtoken':
+        case '/v1/uploads/test/credentials?access_token=validtoken':
             upload.testcreds(function(err, data) {
                 if (err) throw err;
                 res.writeHead(200);
@@ -38,8 +38,9 @@ function Server() {
             if (req.method === 'GET') {
                 res.writeHead(404);
                 res.end(JSON.stringify({message:'Not found'}));
-            } else if (req.method === 'PUT') {
-                res.writeHead(200);
+            }
+            else if (req.method === 'PUT') {
+                res.writeHead(201);
                 res.end(JSON.stringify({}));
             }
             break;
@@ -268,7 +269,7 @@ describe('upload.putfile', function() {
     });
 });
 
-describe('upload.putmap', function() {
+describe('upload.createUpload', function() {
     var server;
     before(function(done) {
         server = Server();
@@ -284,7 +285,7 @@ describe('upload.putmap', function() {
         };
         var prog = progress();
         prog.once('error', cb);
-        upload.putmap(opts(), {}, prog, cb);
+        upload.createUpload(opts(), {}, prog, cb);
     });
     it('failed no bucket', function(done) {
         function cb(err) {
@@ -293,7 +294,7 @@ describe('upload.putmap', function() {
         };
         var prog = progress();
         prog.once('error', cb);
-        upload.putmap(opts(), { key: '_pending' }, prog, cb);
+        upload.createUpload(opts(), { key: '_pending' }, prog, cb);
     });
     it('good creds', function(done) {
         upload.testcreds(function(err, params) {
@@ -308,7 +309,7 @@ describe('upload.putmap', function() {
                 assert.deepEqual(body, {});
                 done && done() || (done = false);
             });
-            upload.putmap(opts(), params, prog, cb);
+            upload.createUpload(opts(), params, prog, cb);
         });
     });
     it('bad creds', function(done) {
@@ -321,7 +322,7 @@ describe('upload.putmap', function() {
             };
             var prog = progress();
             prog.on('error', cb);
-            upload.putmap(opts({accesstoken:'invalid'}), params, prog, cb);
+            upload.createUpload(opts({accesstoken:'invalid'}), params, prog, cb);
         });
     });
 });
