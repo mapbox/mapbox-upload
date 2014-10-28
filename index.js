@@ -149,6 +149,7 @@ upload.createUpload = function(opts, creds, prog, callback) {
         uri: uri,
         proxy: opts.proxy,
         json: {
+            id: opts.mapid,
             url: file
         }
     }, function(err, res, body) {
