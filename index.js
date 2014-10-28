@@ -25,7 +25,7 @@ function upload(opts) {
     });
     return prog;
 }
-upload.MAPBOX = 'https://tiles.mapbox.com';
+upload.MAPBOX = 'https://api.mapbox.com';
 
 upload.opts = function(opts) {
     opts = opts || {};
