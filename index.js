@@ -190,8 +190,6 @@ upload.testcreds = function(callback) {
         return callback(new Error('env var AWS_ACCESS_KEY_ID required'));
     if (!process.env.AWS_SECRET_ACCESS_KEY)
         return callback(new Error('env var AWS_SECRET_ACCESS_KEY required'));
-    if (!process.env.AWS_SESSION_TOKEN)
-        return callback(new Error('env var AWS_SESSION_TOKEN required'));
     var sts = new AWS.STS({ region:'us-east-1' });
 
     callback(null, {

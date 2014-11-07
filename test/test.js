@@ -197,13 +197,11 @@ describe('upload.getcreds', function() {
         function cb(err, c){
             assert.ifError(err);
             assert.equal(c.bucket, 'mapbox-upload-testing');
-            assert.deepEqual(Object.keys(c), [
-                'bucket',
-                'key',
-                'accessKeyId',
-                'secretAccessKey',
-                'sessionToken'
-            ]);
+            var keys = Object.keys(c);
+            assert.ok(keys.indexOf('bucket') > -1);
+            assert.ok(keys.indexOf('key') > -1);
+            assert.ok(keys.indexOf('accessKeyId') > -1);
+            assert.ok(keys.indexOf('secretAccessKey') > -1);
             done && done() || (done = false);
         };
         upload.getcreds(opts(), prog, cb);
