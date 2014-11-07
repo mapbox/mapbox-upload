@@ -183,36 +183,22 @@ upload.putmap = function(opts, creds, prog, callback) {
 // Generate test-friendly upload credentials.
 // Objects from the testing bucket are deleted via lifecycle rule daily.
 upload.testcreds = function(callback) {
+    var md5 = crypto.createHash('md5').update(Math.random().toString()).digest('hex');
+    var key = '_pending/test/' + md5;
+
     if (!process.env.AWS_ACCESS_KEY_ID)
         return callback(new Error('env var AWS_ACCESS_KEY_ID required'));
     if (!process.env.AWS_SECRET_ACCESS_KEY)
         return callback(new Error('env var AWS_SECRET_ACCESS_KEY required'));
-    var sts = new AWS.STS({
+    if (!process.env.AWS_SESSION_TOKEN)
+        return callback(new Error('env var AWS_SESSION_TOKEN required'));
+    var sts = new AWS.STS({ region:'us-east-1' });
+
+    callback(null, {
+        bucket: 'mapbox-upload-testing',
+        key: key,
         accessKeyId: process.env.AWS_ACCESS_KEY_ID,
         secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-        region:'us-east-1'
-    });
-    var md5 = crypto.createHash('md5').update(Math.random().toString()).digest('hex');
-    var key = '_pending/test/' + md5;
-    sts.getFederationToken({
-        Name: 'mapbox-upload',
-        Policy: JSON.stringify({
-            Statement: [{
-                Action: ['s3:PutObject','s3:PutObjectAcl'],
-                Effect: 'Allow',
-                Resource: ['arn:aws:s3:::mapbox-upload-testing/' + key]
-            }]
-        }),
-        DurationSeconds: 3600
-    }, function(err, data) {
-        if (err) return callback(err);
-        callback(null, {
-            bucket: 'mapbox-upload-testing',
-            key: key,
-            accessKeyId: data.Credentials.AccessKeyId,
-            secretAccessKey: data.Credentials.SecretAccessKey,
-            sessionToken: data.Credentials.SessionToken
-        });
+        sessionToken: process.env.AWS_SESSION_TOKEN
     });
 };
-
