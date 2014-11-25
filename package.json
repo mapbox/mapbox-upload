@@ -14,7 +14,7 @@
   ],
   "dependencies": {
     "progress-stream": "0.5.0",
-    "request": "2.37.x",
+    "request": "2.48.x",
     "s3-upload-stream": "0.6.x",
     "aws-sdk": "1.18.0"
   },
