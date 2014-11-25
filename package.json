@@ -19,10 +19,11 @@
     "aws-sdk": "1.18.0"
   },
   "devDependencies": {
+    "retire": "0.3.x",
     "mocha": "1.12.x"
   },
   "scripts": {
-    "test": "mocha -R spec"
+    "test": "retire -n && mocha -R spec"
   },
   "engines": {
     "node": "0.6.x || 0.8.x || 0.10.x"
