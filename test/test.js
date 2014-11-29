@@ -7,7 +7,7 @@ var upload = require(__dirname + '/../index.js');
 upload.MAPBOX = 'http://localhost:3000';
 
 function Server() {
-    return http.createServer(function (req, res) {
+    return http.createServer(function(req, res) {
         switch (req.url) {
         case '/badjson/uploads/v1/test/credentials?access_token=validtoken':
             res.writeHead(200);
@@ -30,8 +30,37 @@ function Server() {
             break;
         case '/uploads/v1/test?access_token=validtoken':
             if (req.method !== 'POST') return notFound(res);
-            res.writeHead(201);
-            res.end(JSON.stringify({}));
+            if (!req.headers['content-type'] ||
+                req.headers['content-type'] !== 'application/json')
+                return badRequest(res, 'Invalid content-type header');
+
+            var body = '';
+            req.on('data', function(chunk) {
+                body += chunk.toString();
+            });
+
+            req.on('end', function() {
+                var json;
+                try {
+                    json = JSON.parse(body);
+                } catch (e) {
+                    return badRequest(res, 'Invalid JSON in body');
+                }
+
+                if (!json.data || !json.url) return badRequest(res, 'Missing attributes in body');
+
+                res.writeHead(201);
+                res.end(JSON.stringify({
+                    id: 'd51e4a022c4eda48ce6d1932fda36189',
+                    progress: 0,
+                    complete: false,
+                    error: null,
+                    created: 1417114050065,
+                    modified: 1417114050065,
+                    data: json.data,
+                    owner: 'test'
+                }));
+            });
             break;
         case '/uploads/v1/test?access_token=invalid':
             if (req.method !== 'POST') return notFound(res);
@@ -60,6 +89,11 @@ function Server() {
     function notFound(res) {
         res.writeHead(404);
         res.end(JSON.stringify({message:'Not found'}));
+    }
+
+    function badRequest(res, message) {
+        res.writeHead(400);
+        res.end(JSON.stringify({message:message}));
     }
 };
 
@@ -312,12 +346,30 @@ describe('upload.createUpload', function() {
             assert.ifError(err);
             function cb(err, body) {
                 assert.ifError(err);
-                assert.deepEqual(body, {});
+                assert.deepEqual(body, {
+                    id: 'd51e4a022c4eda48ce6d1932fda36189',
+                    progress: 0,
+                    complete: false,
+                    error: null,
+                    created: 1417114050065,
+                    modified: 1417114050065,
+                    data: 'test.upload',
+                    owner: 'test'
+                });
                 done && done() || (done = false);
             };
             var prog = progress();
             prog.once('finished', function(body) {
-                assert.deepEqual(body, {});
+                assert.deepEqual(body, {
+                    id: 'd51e4a022c4eda48ce6d1932fda36189',
+                    progress: 0,
+                    complete: false,
+                    error: null,
+                    created: 1417114050065,
+                    modified: 1417114050065,
+                    data: 'test.upload',
+                    owner: 'test'
+                });
                 done && done() || (done = false);
             });
             upload.createUpload(opts(), params, prog, cb);
