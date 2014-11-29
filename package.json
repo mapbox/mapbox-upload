@@ -25,6 +25,9 @@
   "scripts": {
     "test": "retire -n && mocha -R spec"
   },
+  "bin": {
+    "mapbox-upload": "./bin/upload.js"
+  },
   "engines": {
     "node": "0.6.x || 0.8.x || 0.10.x"
   }
