@@ -29,10 +29,10 @@ function Server() {
             });
             break;
         case '/uploads/v1/test?access_token=validtoken':
-            if (req.method !== 'POST') return notFound(res);
+            if (req.method !== 'POST') return error(res, 404, 'Not Found');
             if (!req.headers['content-type'] ||
                 req.headers['content-type'] !== 'application/json')
-                return badRequest(res, 'Invalid content-type header');
+                return error(res, 400, 'Invalid content-type header');
 
             var body = '';
             req.on('data', function(chunk) {
@@ -63,36 +63,26 @@ function Server() {
             });
             break;
         case '/uploads/v1/test?access_token=invalid':
-            if (req.method !== 'POST') return notFound(res);
-            res.writeHead(401);
-            res.end(JSON.stringify({
-                message: 'Unauthorized'
-            }));
+            if (req.method !== 'POST') return error(res, 404, 'Not found');
+            error(res, 401, 'Unauthorized');
             break;
         case '/errorvalidjson/uploads/v1/test?access_token=validtoken':
-            if (req.method !== 'POST') return notFound(res);
-            res.writeHead(400);
-            res.end(JSON.stringify({message:'Bad Request'}));
+            if (req.method !== 'POST') return error(res, 404, 'Not found');
+            error(res, 400, 'Bad Request');
             break;
         case '/errorinvalidjson/uploads/v1/test?access_token=validtoken':
-            if (req.method !== 'POST') return notFound(res);
+            if (req.method !== 'POST') return error(res, 404, 'Not found');
             res.writeHead(400);
             res.end('Bad Request');
             break;
         default:
-            res.writeHead(404);
-            res.end(JSON.stringify({message:'Not found'}));
+            error(res, 404, 'Not found');
             break;
         }
     }).listen(3000);
 
-    function notFound(res) {
-        res.writeHead(404);
-        res.end(JSON.stringify({message:'Not found'}));
-    }
-
-    function badRequest(res, message) {
-        res.writeHead(400);
+    function error(res, statusCode, message) {
+        res.writeHead(statusCode);
         res.end(JSON.stringify({message:message}));
     }
 };
