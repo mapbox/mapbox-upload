@@ -21,12 +21,6 @@ function Server() {
             res.writeHead(200);
             res.end(JSON.stringify({key:'bar'}));
             break;
-        /*
-        case '/api/upload/test?access_token=validtoken':
-            res.writeHead(200);
-            res.end(JSON.stringify(creds));
-            break;
-        */
         case '/v1/uploads/test/credentials?access_token=validtoken':
             upload.testcreds(function(err, data) {
                 if (err) throw err;
