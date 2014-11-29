@@ -153,7 +153,6 @@ upload.createupload = function(opts, creds, prog, callback) {
             'Content-type': 'application/json'
         },
         body: JSON.stringify({
-            id: opts.mapid,
             url: file,
             data: opts.mapid
         })

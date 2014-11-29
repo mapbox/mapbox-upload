@@ -40,14 +40,19 @@ function Server() {
             });
 
             req.on('end', function() {
-                var json;
                 try {
-                    json = JSON.parse(body);
+                    body = JSON.parse(body);
                 } catch (e) {
-                    return badRequest(res, 'Invalid JSON in body');
+                    return error(res, 400, 'Invalid JSON in body');
                 }
 
-                if (!json.data || !json.url) return badRequest(res, 'Missing attributes in body');
+                var schema = ['url', 'data'];
+                for (var k in schema) if (!(schema[k] in body)) {
+                    return error(res, 422, 'Missing property "' + schema[k] + '"');
+                }
+                for (var k in body) if (schema.indexOf(k) === -1) {
+                    return error(res, 422, 'Invalid property "' + k + '"');
+                }
 
                 res.writeHead(201);
                 res.end(JSON.stringify({
@@ -57,7 +62,7 @@ function Server() {
                     error: null,
                     created: 1417114050065,
                     modified: 1417114050065,
-                    data: json.data,
+                    data: body.data,
                     owner: 'test'
                 }));
             });
