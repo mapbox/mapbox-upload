@@ -52,7 +52,7 @@ upload.getcreds = function(opts, prog, callback) {
     try { opts = upload.opts(opts) }
     catch(err) { return upload.error(err, prog) }
     request.get({
-        uri: util.format('%s/v1/uploads/%s/credentials?access_token=%s', opts.mapbox, opts.account, opts.accesstoken),
+        uri: util.format('%s/uploads/v1/%s/credentials?access_token=%s', opts.mapbox, opts.account, opts.accesstoken),
         headers: { 'Host': url.parse(opts.mapbox).host },
         proxy: opts.proxy
     }, function(err, resp, body) {
@@ -142,20 +142,21 @@ upload.createUpload = function(opts, creds, prog, callback) {
     if (!creds.bucket)
         return upload.error(new Error('"bucket" required in creds'), prog);
 
-    var uri = util.format('%s/v1/uploads/%s?access_token=%s', opts.mapbox, opts.mapid, opts.accesstoken);
+    var uri = util.format('%s/uploads/v1/%s?access_token=%s', opts.mapbox, opts.account, opts.accesstoken);
     var file = 'http://' + creds.bucket + '.s3.amazonaws.com/' + creds.key;
 
-    request.put({
+    request.post({
         uri: uri,
         proxy: opts.proxy,
         json: {
             id: opts.mapid,
-            url: file
+            url: file,
+            data: opts.mapid
         }
     }, function(err, res, body) {
-        if (err) 
+        if (err) {
             return upload.error(err, prog);
-        if (res.statusCode !== 201) {
+        } else if (res.statusCode !== 201) {
             var err = new Error(body && body.message || 'Upload PUT failed: ' + res.statusCode);
             err.code = res.statusCode;
             return upload.error(err, prog);

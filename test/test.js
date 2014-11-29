@@ -9,34 +9,28 @@ upload.MAPBOX = 'http://localhost:3000';
 function Server() {
     return http.createServer(function (req, res) {
         switch (req.url) {
-        case '/badjson/v1/uploads/test/credentials?access_token=validtoken':
+        case '/badjson/uploads/v1/test/credentials?access_token=validtoken':
             res.writeHead(200);
             res.end("hello world");
             break;
-        case '/nokey/v1/uploads/test/credentials?access_token=validtoken':
+        case '/nokey/uploads/v1/test/credentials?access_token=validtoken':
             res.writeHead(200);
             res.end(JSON.stringify({bucket:'bar'}));
             break;
-        case '/nobucket/v1/uploads/test/credentials?access_token=validtoken':
+        case '/nobucket/uploads/v1/test/credentials?access_token=validtoken':
             res.writeHead(200);
             res.end(JSON.stringify({key:'bar'}));
             break;
-        case '/v1/uploads/test/credentials?access_token=validtoken':
+        case '/uploads/v1/test/credentials?access_token=validtoken':
             upload.testcreds(function(err, data) {
                 if (err) throw err;
                 res.writeHead(200);
                 res.end(JSON.stringify(data));
             });
             break;
-        case '/v1/uploads/test.upload?access_token=validtoken':
-            if (req.method === 'GET') {
-                res.writeHead(404);
-                res.end(JSON.stringify({message:'Not found'}));
-            }
-            else if (req.method === 'PUT') {
-                res.writeHead(201);
-                res.end(JSON.stringify({}));
-            }
+        case '/uploads/v1/test?access_token=validtoken': // POST
+            res.writeHead(201);
+            res.end(JSON.stringify({}));
             break;
         default:
             res.writeHead(404);
