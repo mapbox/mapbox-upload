@@ -19,7 +19,9 @@ with the **map write** scope enabled by following
 [these steps](https://www.mapbox.com/help/create-api-access-token/). You can
 test the token by making a request like:
 
-    https://api.mapbox.com/api/upload/<your mapbox username>?access_token=<your access token>
+```
+$ curl https://api.tiles.mapbox.com/uploads/v1/<your mapbox username>?access_token=<your access token>
+```
 
 If the request is successful, the token is working.
 
