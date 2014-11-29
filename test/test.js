@@ -314,7 +314,7 @@ describe('upload.putfile', function() {
     });
 });
 
-describe('upload.createUpload', function() {
+describe('upload.createupload', function() {
     var server;
     before(function(done) {
         server = Server();
@@ -330,7 +330,7 @@ describe('upload.createUpload', function() {
         };
         var prog = progress();
         prog.once('error', cb);
-        upload.createUpload(opts(), {}, prog, cb);
+        upload.createupload(opts(), {}, prog, cb);
     });
     it('failed no bucket', function(done) {
         function cb(err) {
@@ -339,7 +339,7 @@ describe('upload.createUpload', function() {
         };
         var prog = progress();
         prog.once('error', cb);
-        upload.createUpload(opts(), { key: '_pending' }, prog, cb);
+        upload.createupload(opts(), { key: '_pending' }, prog, cb);
     });
     it('good creds', function(done) {
         upload.testcreds(function(err, params) {
@@ -372,7 +372,7 @@ describe('upload.createUpload', function() {
                 });
                 done && done() || (done = false);
             });
-            upload.createUpload(opts(), params, prog, cb);
+            upload.createupload(opts(), params, prog, cb);
         });
     });
     it('bad creds', function(done) {
@@ -385,7 +385,7 @@ describe('upload.createUpload', function() {
             };
             var prog = progress();
             prog.on('error', cb);
-            upload.createUpload(opts({accesstoken:'invalid'}), params, prog, cb);
+            upload.createupload(opts({accesstoken:'invalid'}), params, prog, cb);
         });
     });
     it('error - valid json', function(done) {
@@ -398,7 +398,7 @@ describe('upload.createUpload', function() {
             };
             var prog = progress();
             prog.on('error', cb);
-            upload.createUpload(opts({mapbox: 'http://localhost:3000/errorvalidjson'}), params, prog, cb);
+            upload.createupload(opts({mapbox: 'http://localhost:3000/errorvalidjson'}), params, prog, cb);
         });
     });
     it('error - bad json', function(done) {
@@ -410,7 +410,7 @@ describe('upload.createUpload', function() {
             };
             var prog = progress();
             prog.on('error', cb);
-            upload.createUpload(opts({mapbox: 'http://localhost:3000/errorinvalidjson'}), params, prog, cb);
+            upload.createupload(opts({mapbox: 'http://localhost:3000/errorinvalidjson'}), params, prog, cb);
         });
     });
 });

@@ -127,14 +127,14 @@ upload.putfile = function(opts, creds, prog, callback) {
         });
 
         uploadStream.on('uploaded', function (data) {
-            upload.createUpload(opts, creds, prog, callback);
+            upload.createupload(opts, creds, prog, callback);
         });
 
         st.pipe(prog).pipe(uploadStream);
     });
 };
 
-upload.createUpload = function(opts, creds, prog, callback) {
+upload.createupload = function(opts, creds, prog, callback) {
     try { opts = upload.opts(opts) }
     catch(err) { return upload.error(err, prog) }
 
