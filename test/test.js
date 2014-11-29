@@ -28,9 +28,17 @@ function Server() {
                 res.end(JSON.stringify(data));
             });
             break;
-        case '/uploads/v1/test?access_token=validtoken': // POST
+        case '/uploads/v1/test?access_token=validtoken':
+            if (req.method !== 'POST') return notFound(res);
             res.writeHead(201);
             res.end(JSON.stringify({}));
+            break;
+        case '/uploads/v1/test?access_token=invalid':
+            if (req.method !== 'POST') return notFound(res);
+            res.writeHead(401);
+            res.end(JSON.stringify({
+                message: 'Unauthorized'
+            }));
             break;
         default:
             res.writeHead(404);
@@ -38,6 +46,11 @@ function Server() {
             break;
         }
     }).listen(3000);
+
+    function notFound(res) {
+        res.writeHead(404);
+        res.end(JSON.stringify({message:'Not found'}));
+    }
 };
 
 function opts(extend) {
@@ -304,8 +317,8 @@ describe('upload.createUpload', function() {
         upload.testcreds(function(err, params) {
             assert.ifError(err);
             function cb(err) {
-                assert.equal(404, err.code);
-                assert.equal('Not found', err.message);
+                assert.equal(401, err.code);
+                assert.equal('Unauthorized', err.message);
                 done && done() || (done = false);
             };
             var prog = progress();
