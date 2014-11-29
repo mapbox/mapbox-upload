@@ -19,13 +19,13 @@ function upload(opts) {
     try { opts = upload.opts(opts) }
     catch(err) { return upload.error(err, prog) }
 
-    upload.getcreds(opts, prog, function(err, c){
+    upload.getcreds(opts, prog, function(err, c) {
         var creds = c;
         upload.putfile(opts, creds, prog);
     });
     return prog;
 }
-upload.MAPBOX = 'https://api.mapbox.com';
+upload.MAPBOX = 'https://api.tiles.mapbox.com';
 
 upload.opts = function(opts) {
     opts = opts || {};
@@ -52,14 +52,15 @@ upload.getcreds = function(opts, prog, callback) {
     try { opts = upload.opts(opts) }
     catch(err) { return upload.error(err, prog) }
     request.get({
-        uri: util.format('%s/v1/upload/%s?access_token=%s', opts.mapbox, opts.account, opts.accesstoken),
+        uri: util.format('%s/uploads/v1/%s/credentials?access_token=%s', opts.mapbox, opts.account, opts.accesstoken),
         headers: { 'Host': url.parse(opts.mapbox).host },
         proxy: opts.proxy
     }, function(err, resp, body) {
         if (err) return upload.error(err, prog);
         try {
             body = JSON.parse(body);
-        } catch(err) {
+        } catch(e) {
+            var err = new Error('Invalid JSON returned from Mapbox API: ' + e.message);
             return upload.error(err, prog);
         }
         if (resp.statusCode !== 200) {
@@ -126,14 +127,14 @@ upload.putfile = function(opts, creds, prog, callback) {
         });
 
         uploadStream.on('uploaded', function (data) {
-            upload.putmap(opts, creds, prog, callback);
+            upload.createupload(opts, creds, prog, callback);
         });
 
         st.pipe(prog).pipe(uploadStream);
     });
 };
 
-upload.putmap = function(opts, creds, prog, callback) {
+upload.createupload = function(opts, creds, prog, callback) {
     try { opts = upload.opts(opts) }
     catch(err) { return upload.error(err, prog) }
 
@@ -142,41 +143,35 @@ upload.putmap = function(opts, creds, prog, callback) {
     if (!creds.bucket)
         return upload.error(new Error('"bucket" required in creds'), prog);
 
-    var uri = util.format('%s/api/Map/%s?access_token=%s', opts.mapbox, opts.mapid, opts.accesstoken);
-    request.get({ uri: uri, proxy: opts.proxy }, function(err, res, body) {
-        if (err)
+    var uri = util.format('%s/uploads/v1/%s?access_token=%s', opts.mapbox, opts.account, opts.accesstoken);
+    var file = 'http://' + creds.bucket + '.s3.amazonaws.com/' + creds.key;
+
+    request.post({
+        uri: uri,
+        proxy: opts.proxy,
+        headers: {
+            'Content-type': 'application/json'
+        },
+        body: JSON.stringify({
+            url: file,
+            data: opts.mapid
+        })
+    }, function(err, res, body) {
+        if (err) return upload.error(err, prog);
+        try {
+            body = JSON.parse(body);
+        } catch(e) {
+            var err = new Error('Invalid JSON returned from Mapbox API: ' + e.message);
             return upload.error(err, prog);
-        if (res.statusCode !== 404 && res.statusCode !== 200) {
-            var err = new Error(body && body.message || 'Map PUT failed: ' + res.statusCode);
+        }
+        if (res.statusCode !== 201) {
+            var err = new Error(body && body.message || body);
             err.code = res.statusCode;
             return upload.error(err, prog);
         }
 
-        try {
-            var data = res.statusCode === 404 ? {} : JSON.parse(body);
-        } catch(err) { return upload.error(err, prog) }
-
-        data.id = opts.mapid;
-        data._type = 'tileset';
-        data.status = 'pending';
-        data.url = 'http://' + creds.bucket + '.s3.amazonaws.com/' + creds.key;
-        data.created = +new Date;
-
-        request.put({
-            url: uri,
-            json: data,
-            proxy: opts.proxy
-        }, function(err, res, body) {
-            if (err)
-                return upload.error(err, prog);
-            if (res.statusCode !== 200) {
-                var err = new Error(body && body.message || 'Map PUT failed: ' + res.statusCode);
-                err.code = res.statusCode;
-                return upload.error(err, prog);
-            }
-            prog.emit('finished', body);
-            return callback && callback(null, body);
-        });
+        prog.emit('finished', body);
+        return callback && callback(null, body);
     });
 };
 

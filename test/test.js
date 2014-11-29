@@ -7,48 +7,89 @@ var upload = require(__dirname + '/../index.js');
 upload.MAPBOX = 'http://localhost:3000';
 
 function Server() {
-    return http.createServer(function (req, res) {
+    return http.createServer(function(req, res) {
         switch (req.url) {
-        case '/badjson/v1/upload/test?access_token=validtoken':
+        case '/badjson/uploads/v1/test/credentials?access_token=validtoken':
             res.writeHead(200);
             res.end("hello world");
             break;
-        case '/nokey/v1/upload/test?access_token=validtoken':
+        case '/nokey/uploads/v1/test/credentials?access_token=validtoken':
             res.writeHead(200);
             res.end(JSON.stringify({bucket:'bar'}));
             break;
-        case '/nobucket/v1/upload/test?access_token=validtoken':
+        case '/nobucket/uploads/v1/test/credentials?access_token=validtoken':
             res.writeHead(200);
             res.end(JSON.stringify({key:'bar'}));
             break;
-        /*
-        case '/api/upload/test?access_token=validtoken':
-            res.writeHead(200);
-            res.end(JSON.stringify(creds));
-            break;
-        */
-        case '/v1/upload/test?access_token=validtoken':
+        case '/uploads/v1/test/credentials?access_token=validtoken':
             upload.testcreds(function(err, data) {
                 if (err) throw err;
                 res.writeHead(200);
                 res.end(JSON.stringify(data));
             });
             break;
-        case '/api/Map/test.upload?access_token=validtoken':
-            if (req.method === 'GET') {
-                res.writeHead(404);
-                res.end(JSON.stringify({message:'Not found'}));
-            } else if (req.method === 'PUT') {
-                res.writeHead(200);
-                res.end(JSON.stringify({}));
-            }
+        case '/uploads/v1/test?access_token=validtoken':
+            if (req.method !== 'POST') return error(res, 404, 'Not Found');
+            if (!req.headers['content-type'] ||
+                req.headers['content-type'] !== 'application/json')
+                return error(res, 400, 'Invalid content-type header');
+
+            var body = '';
+            req.on('data', function(chunk) {
+                body += chunk.toString();
+            });
+
+            req.on('end', function() {
+                try {
+                    body = JSON.parse(body);
+                } catch (e) {
+                    return error(res, 400, 'Invalid JSON in body');
+                }
+
+                var schema = ['url', 'data'];
+                for (var k in schema) if (!(schema[k] in body)) {
+                    return error(res, 422, 'Missing property "' + schema[k] + '"');
+                }
+                for (var k in body) if (schema.indexOf(k) === -1) {
+                    return error(res, 422, 'Invalid property "' + k + '"');
+                }
+
+                res.writeHead(201);
+                res.end(JSON.stringify({
+                    id: 'd51e4a022c4eda48ce6d1932fda36189',
+                    progress: 0,
+                    complete: false,
+                    error: null,
+                    created: 1417114050065,
+                    modified: 1417114050065,
+                    data: body.data,
+                    owner: 'test'
+                }));
+            });
+            break;
+        case '/uploads/v1/test?access_token=invalid':
+            if (req.method !== 'POST') return error(res, 404, 'Not found');
+            error(res, 401, 'Unauthorized');
+            break;
+        case '/errorvalidjson/uploads/v1/test?access_token=validtoken':
+            if (req.method !== 'POST') return error(res, 404, 'Not found');
+            error(res, 400, 'Bad Request');
+            break;
+        case '/errorinvalidjson/uploads/v1/test?access_token=validtoken':
+            if (req.method !== 'POST') return error(res, 404, 'Not found');
+            res.writeHead(400);
+            res.end('Bad Request');
             break;
         default:
-            res.writeHead(404);
-            res.end(JSON.stringify({message:'Not found'}));
+            error(res, 404, 'Not found');
             break;
         }
     }).listen(3000);
+
+    function error(res, statusCode, message) {
+        res.writeHead(statusCode);
+        res.end(JSON.stringify({message:message}));
+    }
 };
 
 function opts(extend) {
@@ -158,7 +199,7 @@ describe('upload.getcreds', function() {
     });
     it('failed status', function(done) {
         function cb(err, creds) {
-            assert.equal('Unexpected token <', err.message);
+            assert.equal('Invalid JSON returned from Mapbox API: Unexpected token <', err.message);
             done && done() || (done = false);
         };
         var prog = progress();
@@ -167,7 +208,7 @@ describe('upload.getcreds', function() {
     });
     it('failed badjson', function(done) {
         function cb(err, creds) {
-            assert.equal('Unexpected token h', err.message);
+            assert.equal('Invalid JSON returned from Mapbox API: Unexpected token h', err.message);
             done && done() || (done = false);
         };
         var prog = progress();
@@ -268,7 +309,7 @@ describe('upload.putfile', function() {
     });
 });
 
-describe('upload.putmap', function() {
+describe('upload.createupload', function() {
     var server;
     before(function(done) {
         server = Server();
@@ -284,7 +325,7 @@ describe('upload.putmap', function() {
         };
         var prog = progress();
         prog.once('error', cb);
-        upload.putmap(opts(), {}, prog, cb);
+        upload.createupload(opts(), {}, prog, cb);
     });
     it('failed no bucket', function(done) {
         function cb(err) {
@@ -293,35 +334,78 @@ describe('upload.putmap', function() {
         };
         var prog = progress();
         prog.once('error', cb);
-        upload.putmap(opts(), { key: '_pending' }, prog, cb);
+        upload.createupload(opts(), { key: '_pending' }, prog, cb);
     });
     it('good creds', function(done) {
         upload.testcreds(function(err, params) {
             assert.ifError(err);
             function cb(err, body) {
                 assert.ifError(err);
-                assert.deepEqual(body, {});
+                assert.deepEqual(body, {
+                    id: 'd51e4a022c4eda48ce6d1932fda36189',
+                    progress: 0,
+                    complete: false,
+                    error: null,
+                    created: 1417114050065,
+                    modified: 1417114050065,
+                    data: 'test.upload',
+                    owner: 'test'
+                });
                 done && done() || (done = false);
             };
             var prog = progress();
             prog.once('finished', function(body) {
-                assert.deepEqual(body, {});
+                assert.deepEqual(body, {
+                    id: 'd51e4a022c4eda48ce6d1932fda36189',
+                    progress: 0,
+                    complete: false,
+                    error: null,
+                    created: 1417114050065,
+                    modified: 1417114050065,
+                    data: 'test.upload',
+                    owner: 'test'
+                });
                 done && done() || (done = false);
             });
-            upload.putmap(opts(), params, prog, cb);
+            upload.createupload(opts(), params, prog, cb);
         });
     });
     it('bad creds', function(done) {
         upload.testcreds(function(err, params) {
             assert.ifError(err);
             function cb(err) {
-                assert.equal(404, err.code);
-                assert.equal('Not found', err.message);
+                assert.equal(401, err.code);
+                assert.equal('Unauthorized', err.message);
                 done && done() || (done = false);
             };
             var prog = progress();
             prog.on('error', cb);
-            upload.putmap(opts({accesstoken:'invalid'}), params, prog, cb);
+            upload.createupload(opts({accesstoken:'invalid'}), params, prog, cb);
+        });
+    });
+    it('error - valid json', function(done) {
+        upload.testcreds(function(err, params) {
+            assert.ifError(err);
+            function cb(err) {
+                assert.equal(400, err.code);
+                assert.equal('Bad Request', err.message);
+                done && done() || (done = false);
+            };
+            var prog = progress();
+            prog.on('error', cb);
+            upload.createupload(opts({mapbox: 'http://localhost:3000/errorvalidjson'}), params, prog, cb);
+        });
+    });
+    it('error - bad json', function(done) {
+        upload.testcreds(function(err, params) {
+            assert.ifError(err);
+            function cb(err) {
+                assert.equal(err.message, 'Invalid JSON returned from Mapbox API: Unexpected token B');
+                done && done() || (done = false);
+            };
+            var prog = progress();
+            prog.on('error', cb);
+            upload.createupload(opts({mapbox: 'http://localhost:3000/errorinvalidjson'}), params, prog, cb);
         });
     });
 });
