@@ -9,15 +9,15 @@ upload.MAPBOX = 'http://localhost:3000';
 function Server() {
     return http.createServer(function (req, res) {
         switch (req.url) {
-        case '/badjson/api/upload/test?access_token=validtoken':
+        case '/badjson/v1/upload/test?access_token=validtoken':
             res.writeHead(200);
             res.end("hello world");
             break;
-        case '/nokey/api/upload/test?access_token=validtoken':
+        case '/nokey/v1/upload/test?access_token=validtoken':
             res.writeHead(200);
             res.end(JSON.stringify({bucket:'bar'}));
             break;
-        case '/nobucket/api/upload/test?access_token=validtoken':
+        case '/nobucket/v1/upload/test?access_token=validtoken':
             res.writeHead(200);
             res.end(JSON.stringify({key:'bar'}));
             break;
@@ -167,7 +167,7 @@ describe('upload.getcreds', function() {
     });
     it('failed badjson', function(done) {
         function cb(err, creds) {
-            assert.equal('Not found', err.message);
+            assert.equal('Unexpected token h', err.message);
             done && done() || (done = false);
         };
         var prog = progress();
@@ -176,7 +176,7 @@ describe('upload.getcreds', function() {
     });
     it('failed no key', function(done) {
         function cb(err, creds) {
-            assert.equal('Not found', err.message);
+            assert.equal('Invalid creds', err.message);
             done && done() || (done = false);
         };
         var prog = progress();
@@ -185,7 +185,7 @@ describe('upload.getcreds', function() {
     });
     it('failed no bucket', function(done) {
         function cb(err, creds) {
-            assert.equal('Not found', err.message);
+            assert.equal('Invalid creds', err.message);
             done && done() || (done = false);
         };
         var prog = progress();
