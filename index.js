@@ -154,10 +154,9 @@ upload.createUpload = function(opts, creds, prog, callback) {
             data: opts.mapid
         }
     }, function(err, res, body) {
-        if (err) {
-            return upload.error(err, prog);
-        } else if (res.statusCode !== 201) {
-            var err = new Error(body && body.message || 'Upload PUT failed: ' + res.statusCode);
+        if (err) return upload.error(err, prog);
+        if (res.statusCode !== 201) {
+            var err = new Error(body && body.message || body);
             err.code = res.statusCode;
             return upload.error(err, prog);
         }

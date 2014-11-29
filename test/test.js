@@ -40,6 +40,16 @@ function Server() {
                 message: 'Unauthorized'
             }));
             break;
+        case '/errorvalidjson/uploads/v1/test?access_token=validtoken':
+            if (req.method !== 'POST') return notFound(res);
+            res.writeHead(400);
+            res.end(JSON.stringify({message:'Bad Request'}));
+            break;
+        case '/errorinvalidjson/uploads/v1/test?access_token=validtoken':
+            if (req.method !== 'POST') return notFound(res);
+            res.writeHead(400);
+            res.end('Bad Request');
+            break;
         default:
             res.writeHead(404);
             res.end(JSON.stringify({message:'Not found'}));
@@ -324,6 +334,32 @@ describe('upload.createUpload', function() {
             var prog = progress();
             prog.on('error', cb);
             upload.createUpload(opts({accesstoken:'invalid'}), params, prog, cb);
+        });
+    });
+    it('error - valid json', function(done) {
+        upload.testcreds(function(err, params) {
+            assert.ifError(err);
+            function cb(err) {
+                assert.equal(400, err.code);
+                assert.equal('Bad Request', err.message);
+                done && done() || (done = false);
+            };
+            var prog = progress();
+            prog.on('error', cb);
+            upload.createUpload(opts({mapbox: 'http://localhost:3000/errorvalidjson'}), params, prog, cb);
+        });
+    });
+    it('error - bad json', function(done) {
+        upload.testcreds(function(err, params) {
+            assert.ifError(err);
+            function cb(err) {
+                assert.equal(400, err.code);
+                assert.equal('Bad Request', err.message);
+                done && done() || (done = false);
+            };
+            var prog = progress();
+            prog.on('error', cb);
+            upload.createUpload(opts({mapbox: 'http://localhost:3000/errorinvalidjson'}), params, prog, cb);
         });
     });
 });
