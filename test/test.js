@@ -204,7 +204,7 @@ describe('upload.getcreds', function() {
     });
     it('failed status', function(done) {
         function cb(err, creds) {
-            assert.equal('Unexpected token <', err.message);
+            assert.equal('Invalid JSON returned from Mapbox API: Unexpected token <', err.message);
             done && done() || (done = false);
         };
         var prog = progress();
@@ -213,7 +213,7 @@ describe('upload.getcreds', function() {
     });
     it('failed badjson', function(done) {
         function cb(err, creds) {
-            assert.equal('Unexpected token h', err.message);
+            assert.equal('Invalid JSON returned from Mapbox API: Unexpected token h', err.message);
             done && done() || (done = false);
         };
         var prog = progress();
@@ -405,8 +405,7 @@ describe('upload.createUpload', function() {
         upload.testcreds(function(err, params) {
             assert.ifError(err);
             function cb(err) {
-                assert.equal(400, err.code);
-                assert.equal('Bad Request', err.message);
+                assert.equal(err.message, 'Invalid JSON returned from Mapbox API: Unexpected token B');
                 done && done() || (done = false);
             };
             var prog = progress();

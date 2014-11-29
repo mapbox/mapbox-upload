@@ -19,7 +19,7 @@ function upload(opts) {
     try { opts = upload.opts(opts) }
     catch(err) { return upload.error(err, prog) }
 
-    upload.getcreds(opts, prog, function(err, c){
+    upload.getcreds(opts, prog, function(err, c) {
         var creds = c;
         upload.putfile(opts, creds, prog);
     });
@@ -59,7 +59,8 @@ upload.getcreds = function(opts, prog, callback) {
         if (err) return upload.error(err, prog);
         try {
             body = JSON.parse(body);
-        } catch(err) {
+        } catch(e) {
+            var err = new Error('Invalid JSON returned from Mapbox API: ' + e.message);
             return upload.error(err, prog);
         }
         if (resp.statusCode !== 200) {
@@ -148,13 +149,22 @@ upload.createUpload = function(opts, creds, prog, callback) {
     request.post({
         uri: uri,
         proxy: opts.proxy,
-        json: {
+        headers: {
+            'Content-type': 'application/json'
+        },
+        body: JSON.stringify({
             id: opts.mapid,
             url: file,
             data: opts.mapid
-        }
+        })
     }, function(err, res, body) {
         if (err) return upload.error(err, prog);
+        try {
+            body = JSON.parse(body);
+        } catch(e) {
+            var err = new Error('Invalid JSON returned from Mapbox API: ' + e.message);
+            return upload.error(err, prog);
+        }
         if (res.statusCode !== 201) {
             var err = new Error(body && body.message || body);
             err.code = res.statusCode;
