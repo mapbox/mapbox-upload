@@ -19,7 +19,8 @@ function upload(opts) {
     try { opts = upload.opts(opts) }
     catch(err) { return upload.error(err, prog) }
 
-    upload.getcreds(opts, prog, function(err, c) {
+    upload.getcreds(opts, function(err, c) {
+        if (err) return prog.emit('error', err);
         var creds = c;
         upload.putfile(opts, creds, prog);
     });
@@ -48,30 +49,30 @@ upload.error = function(err, prog) {
     return prog.emit('error', err);
 };
 
-upload.getcreds = function(opts, prog, callback) {
+upload.getcreds = function(opts, callback) {
     try { opts = upload.opts(opts) }
-    catch(err) { return upload.error(err, prog) }
+    catch(err) { return callback(err) }
     request.get({
         uri: util.format('%s/uploads/v1/%s/credentials?access_token=%s', opts.mapbox, opts.account, opts.accesstoken),
         headers: { 'Host': url.parse(opts.mapbox).host },
         proxy: opts.proxy
     }, function(err, resp, body) {
-        if (err) return upload.error(err, prog);
+        if (err) return callback(err);
         try {
             body = JSON.parse(body);
         } catch(e) {
             var err = new Error('Invalid JSON returned from Mapbox API: ' + e.message);
-            return upload.error(err, prog);
+            return callback(err);
         }
         if (resp.statusCode !== 200) {
             var err = new Error(body && body.message || 'Mapbox is not available: ' + resp.statusCode);
             err.code = resp.statusCode;
-            return upload.error(err, prog);
+            return callback(err);
         }
         if (!body.key || !body.bucket) {
-            return upload.error(new Error('Invalid creds'), prog);
+            return callback(new Error('Invalid creds'));
         } else {
-            return callback && callback(null, body);
+            return callback(null, body);
         }
     });
 };
