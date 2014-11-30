@@ -17,7 +17,7 @@ function upload(opts) {
     var prog = progress({ time: 100 });
 
     try { opts = upload.opts(opts) }
-    catch(err) { return upload.error(err, prog) }
+    catch(err) { return prog.emit('error', err) }
 
     upload.getcreds(opts, function(err, c) {
         if (err) return prog.emit('error', err);
@@ -43,10 +43,6 @@ upload.opts = function(opts) {
     if (opts.mapid.split('.')[0] !== opts.account)
         throw new Error(util.format('Invalid mapid "%s" for account "%s"', opts.mapid, opts.account));
     return opts;
-};
-
-upload.error = function(err, prog) {
-    return prog.emit('error', err);
 };
 
 upload.getcreds = function(opts, callback) {
@@ -79,25 +75,25 @@ upload.getcreds = function(opts, callback) {
 
 upload.putfile = function(opts, creds, prog) {
     try { opts = upload.opts(opts) }
-    catch(err) { return upload.error(err, prog) }
+    catch(err) { return prog.emit('error', err) }
 
     if (!creds.key)
-        return upload.error(new Error('"key" required in creds'), prog);
+        return prog.emit('error', new Error('"key" required in creds'), prog);
     if (!creds.bucket)
-        return upload.error(new Error('"bucket" required in creds'), prog);
+        return prog.emit('error', new Error('"bucket" required in creds'), prog);
 
     if (opts.stream) {
-        if (!opts.stream instanceof stream) return upload.error(new Error('"stream" must be an stream object'), prog);
+        if (!opts.stream instanceof stream) return prog.emit('error', new Error('"stream" must be an stream object'), prog);
         var st = opts.stream;
 
         // if length isn't set progress-stream will not report progress
         if (opts.length) prog.setLength(opts.length)
         else st.on('length', prog.setLength);
     } else {
-        if (!opts.file || typeof opts.file != 'string') return upload.error(new Error('"file" must be an string'), prog);
+        if (!opts.file || typeof opts.file != 'string') return prog.emit('error', new Error('"file" must be an string'), prog);
         var st = fs.createReadStream(opts.file)
             .on('error', function(err) {
-                upload.error(err, prog);
+                prog.emit('error', err);
             });
         prog.setLength(fs.statSync(opts.file).size);
     }
@@ -120,11 +116,11 @@ upload.putfile = function(opts, creds, prog) {
         Bucket: creds.bucket,
         Key: creds.key // Amazon S3 object name
     }, function(err, uploadStream) {
-        if (err) return upload.error(err, prog);
+        if (err) return prog.emit('error', err);
 
         uploadStream.on('error', function(e){
             e = new Error(e || 'Upload to Mapbox.com failed');
-            return upload.error(e, prog);
+            return prog.emit('error', e, prog);
         });
 
         uploadStream.on('uploaded', function (data) {
