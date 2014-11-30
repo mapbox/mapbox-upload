@@ -77,7 +77,7 @@ upload.getcreds = function(opts, callback) {
     });
 };
 
-upload.putfile = function(opts, creds, prog, callback) {
+upload.putfile = function(opts, creds, prog) {
     try { opts = upload.opts(opts) }
     catch(err) { return upload.error(err, prog) }
 
@@ -128,7 +128,10 @@ upload.putfile = function(opts, creds, prog, callback) {
         });
 
         uploadStream.on('uploaded', function (data) {
-            upload.createupload(opts, creds, prog, callback);
+            upload.createupload(opts, creds, prog, function(err, body) {
+                if (err) return prog.emit('error', err);
+                prog.emit('finished', body);
+            });
         });
 
         st.pipe(prog).pipe(uploadStream);
@@ -171,8 +174,7 @@ upload.createupload = function(opts, creds, prog, callback) {
             return upload.error(err, prog);
         }
 
-        prog.emit('finished', body);
-        return callback && callback(null, body);
+        return callback(null, body);
     });
 };
 

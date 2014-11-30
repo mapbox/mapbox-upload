@@ -255,7 +255,7 @@ describe('upload.putfile', function() {
         };
         var prog = progress();
         prog.once('error', cb);
-        upload.putfile(opts(), {}, prog, cb);
+        upload.putfile(opts(), {}, prog);
     });
     it('failed no bucket', function(done) {
         function cb(err) {
@@ -270,8 +270,7 @@ describe('upload.putfile', function() {
         this.timeout(0);
         upload.testcreds(function(err, creds) {
             assert.ifError(err);
-            function check(err) {
-                assert.ifError(err);
+            function check() {
                 request.head({
                     uri: 'http://mapbox-upload-testing.s3.amazonaws.com/' + creds.key
                 }, function(err, res, body) {
@@ -284,7 +283,8 @@ describe('upload.putfile', function() {
                 });
             };
             var prog = progress();
-            upload.putfile(opts(), creds, prog, check);
+            prog.on('finished', check);
+            upload.putfile(opts(), creds, prog);
         });
     });
 });
