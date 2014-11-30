@@ -128,7 +128,7 @@ upload.putfile = function(opts, creds, prog) {
         });
 
         uploadStream.on('uploaded', function (data) {
-            upload.createupload(opts, creds, prog, function(err, body) {
+            upload.createupload(opts, creds, function(err, body) {
                 if (err) return prog.emit('error', err);
                 prog.emit('finished', body);
             });
@@ -138,14 +138,14 @@ upload.putfile = function(opts, creds, prog) {
     });
 };
 
-upload.createupload = function(opts, creds, prog, callback) {
+upload.createupload = function(opts, creds, callback) {
     try { opts = upload.opts(opts) }
-    catch(err) { return upload.error(err, prog) }
+    catch(err) { return callback(err) }
 
     if (!creds.key)
-        return upload.error(new Error('"key" required in creds'), prog);
+        return callback(new Error('"key" required in creds'));
     if (!creds.bucket)
-        return upload.error(new Error('"bucket" required in creds'), prog);
+        return callback(new Error('"bucket" required in creds'));
 
     var uri = util.format('%s/uploads/v1/%s?access_token=%s', opts.mapbox, opts.account, opts.accesstoken);
     var file = 'http://' + creds.bucket + '.s3.amazonaws.com/' + creds.key;
@@ -161,17 +161,17 @@ upload.createupload = function(opts, creds, prog, callback) {
             data: opts.mapid
         })
     }, function(err, res, body) {
-        if (err) return upload.error(err, prog);
+        if (err) return callback(err);
         try {
             body = JSON.parse(body);
         } catch(e) {
             var err = new Error('Invalid JSON returned from Mapbox API: ' + e.message);
-            return upload.error(err, prog);
+            return callback(err);
         }
         if (res.statusCode !== 201) {
             var err = new Error(body && body.message || body);
             err.code = res.statusCode;
-            return upload.error(err, prog);
+            return callback(err);
         }
 
         return callback(null, body);

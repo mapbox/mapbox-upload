@@ -299,27 +299,21 @@ describe('upload.createupload', function() {
         server.close(done);
     });
     it('failed no key', function(done) {
-        function cb(err) {
+        upload.createupload(opts(), {}, function cb(err) {
             assert.equal('"key" required in creds', err.message);
-            done && done() || (done = false);
-        };
-        var prog = progress();
-        prog.once('error', cb);
-        upload.createupload(opts(), {}, prog, cb);
+            done();
+        });
     });
     it('failed no bucket', function(done) {
-        function cb(err) {
+        upload.createupload(opts(), { key: '_pending' }, function cb(err) {
             assert.equal('"bucket" required in creds', err.message);
-            done && done() || (done = false);
-        };
-        var prog = progress();
-        prog.once('error', cb);
-        upload.createupload(opts(), { key: '_pending' }, prog, cb);
+            done();
+        });
     });
     it('good creds', function(done) {
         upload.testcreds(function(err, params) {
             assert.ifError(err);
-            function cb(err, body) {
+            upload.createupload(opts(), params, function cb(err, body) {
                 assert.ifError(err);
                 assert.deepEqual(body, {
                     id: 'd51e4a022c4eda48ce6d1932fda36189',
@@ -331,61 +325,37 @@ describe('upload.createupload', function() {
                     data: 'test.upload',
                     owner: 'test'
                 });
-                done && done() || (done = false);
-            };
-            var prog = progress();
-            prog.once('finished', function(body) {
-                assert.deepEqual(body, {
-                    id: 'd51e4a022c4eda48ce6d1932fda36189',
-                    progress: 0,
-                    complete: false,
-                    error: null,
-                    created: 1417114050065,
-                    modified: 1417114050065,
-                    data: 'test.upload',
-                    owner: 'test'
-                });
-                done && done() || (done = false);
+                done();
             });
-            upload.createupload(opts(), params, prog, cb);
         });
     });
     it('bad creds', function(done) {
         upload.testcreds(function(err, params) {
             assert.ifError(err);
-            function cb(err) {
+            upload.createupload(opts({accesstoken:'invalid'}), params, function cb(err) {
                 assert.equal(401, err.code);
                 assert.equal('Unauthorized', err.message);
-                done && done() || (done = false);
-            };
-            var prog = progress();
-            prog.on('error', cb);
-            upload.createupload(opts({accesstoken:'invalid'}), params, prog, cb);
+                done();
+            });
         });
     });
     it('error - valid json', function(done) {
         upload.testcreds(function(err, params) {
             assert.ifError(err);
-            function cb(err) {
+            upload.createupload(opts({mapbox: 'http://localhost:3000/errorvalidjson'}), params, function cb(err) {
                 assert.equal(400, err.code);
                 assert.equal('Bad Request', err.message);
-                done && done() || (done = false);
-            };
-            var prog = progress();
-            prog.on('error', cb);
-            upload.createupload(opts({mapbox: 'http://localhost:3000/errorvalidjson'}), params, prog, cb);
+                done();
+            });
         });
     });
     it('error - bad json', function(done) {
         upload.testcreds(function(err, params) {
             assert.ifError(err);
-            function cb(err) {
+            upload.createupload(opts({mapbox: 'http://localhost:3000/errorinvalidjson'}), params, function cb(err) {
                 assert.equal(err.message, 'Invalid JSON returned from Mapbox API: Unexpected token B');
-                done && done() || (done = false);
-            };
-            var prog = progress();
-            prog.on('error', cb);
-            upload.createupload(opts({mapbox: 'http://localhost:3000/errorinvalidjson'}), params, prog, cb);
+                done();
+            });
         });
     });
 });
