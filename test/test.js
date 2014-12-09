@@ -298,22 +298,11 @@ describe('upload.createupload', function() {
     after(function(done) {
         server.close(done);
     });
-    it('failed no key', function(done) {
-        upload.createupload(opts(), {}, function cb(err) {
-            assert.equal('"key" required in creds', err.message);
-            done();
-        });
-    });
-    it('failed no bucket', function(done) {
-        upload.createupload(opts(), { key: '_pending' }, function cb(err) {
-            assert.equal('"bucket" required in creds', err.message);
-            done();
-        });
-    });
     it('good creds', function(done) {
-        upload.testcreds(function(err, params) {
+        upload.testcreds(function(err, creds) {
             assert.ifError(err);
-            upload.createupload(opts(), params, function cb(err, body) {
+            var url = 'http://' + creds.bucket + '.s3.amazonaws.com/' + creds.key;
+            upload.createupload(url, opts(), function cb(err, body) {
                 assert.ifError(err);
                 assert.deepEqual(body, {
                     id: 'd51e4a022c4eda48ce6d1932fda36189',
@@ -330,9 +319,10 @@ describe('upload.createupload', function() {
         });
     });
     it('bad creds', function(done) {
-        upload.testcreds(function(err, params) {
+        upload.testcreds(function(err, creds) {
             assert.ifError(err);
-            upload.createupload(opts({accesstoken:'invalid'}), params, function cb(err) {
+            var url = 'http://' + creds.bucket + '.s3.amazonaws.com/' + creds.key;
+            upload.createupload(url, opts({accesstoken:'invalid'}), function cb(err) {
                 assert.equal(401, err.code);
                 assert.equal('Unauthorized', err.message);
                 done();
@@ -340,9 +330,10 @@ describe('upload.createupload', function() {
         });
     });
     it('error - valid json', function(done) {
-        upload.testcreds(function(err, params) {
+        upload.testcreds(function(err, creds) {
             assert.ifError(err);
-            upload.createupload(opts({mapbox: 'http://localhost:3000/errorvalidjson'}), params, function cb(err) {
+            var url = 'http://' + creds.bucket + '.s3.amazonaws.com/' + creds.key;
+            upload.createupload(url, opts({mapbox: 'http://localhost:3000/errorvalidjson'}), function cb(err) {
                 assert.equal(400, err.code);
                 assert.equal('Bad Request', err.message);
                 done();
@@ -350,9 +341,10 @@ describe('upload.createupload', function() {
         });
     });
     it('error - bad json', function(done) {
-        upload.testcreds(function(err, params) {
+        upload.testcreds(function(err, creds) {
             assert.ifError(err);
-            upload.createupload(opts({mapbox: 'http://localhost:3000/errorinvalidjson'}), params, function cb(err) {
+            var url = 'http://' + creds.bucket + '.s3.amazonaws.com/' + creds.key;
+            upload.createupload(url, opts({mapbox: 'http://localhost:3000/errorinvalidjson'}), function cb(err) {
                 assert.equal(err.message, 'Invalid JSON returned from Mapbox API: Unexpected token B');
                 done();
             });

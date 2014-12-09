@@ -106,7 +106,7 @@ upload.putfile = function(opts, creds, prog) {
         accessKeyId: creds.accessKeyId,
         secretAccessKey: creds.secretAccessKey,
         sessionToken: creds.sessionToken,
-        region: "us-east-1"
+        region: 'us-east-1'
     });
     // Set up read for file and start the upload.
     var mpu = new mpuUploader({
@@ -114,7 +114,7 @@ upload.putfile = function(opts, creds, prog) {
     }, {
         ACL: 'public-read',
         Bucket: creds.bucket,
-        Key: creds.key // Amazon S3 object name
+        Key: creds.key
     }, function(err, uploadStream) {
         if (err) return prog.emit('error', err);
 
@@ -124,7 +124,8 @@ upload.putfile = function(opts, creds, prog) {
         });
 
         uploadStream.on('uploaded', function (data) {
-            upload.createupload(opts, creds, function(err, body) {
+            var url = 'http://' + creds.bucket + '.s3.amazonaws.com/' + creds.key;
+            upload.createupload(url, opts, function(err, body) {
                 if (err) return prog.emit('error', err);
                 prog.emit('finished', body);
             });
@@ -134,17 +135,11 @@ upload.putfile = function(opts, creds, prog) {
     });
 };
 
-upload.createupload = function(opts, creds, callback) {
+upload.createupload = function(url, opts, callback) {
     try { opts = upload.opts(opts) }
     catch(err) { return callback(err) }
 
-    if (!creds.key)
-        return callback(new Error('"key" required in creds'));
-    if (!creds.bucket)
-        return callback(new Error('"bucket" required in creds'));
-
     var uri = util.format('%s/uploads/v1/%s?access_token=%s', opts.mapbox, opts.account, opts.accesstoken);
-    var file = 'http://' + creds.bucket + '.s3.amazonaws.com/' + creds.key;
 
     request.post({
         uri: uri,
@@ -153,7 +148,7 @@ upload.createupload = function(opts, creds, callback) {
             'Content-type': 'application/json'
         },
         body: JSON.stringify({
-            url: file,
+            url: url,
             data: opts.mapid
         })
     }, function(err, res, body) {
