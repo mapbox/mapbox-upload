@@ -189,53 +189,37 @@ describe('upload.getcreds', function() {
         server.close(done);
     });
     it('failed req', function(done) {
-        function cb(err, creds) {
+        upload.getcreds(opts({ mapbox: 'http://doesnotexist:9999' }), function cb(err, creds) {
             assert.equal('getaddrinfo ENOTFOUND', err.message);
-            done && done() || (done = false);
-        };
-        var prog = progress();
-        prog.on('error', cb);
-        upload.getcreds(opts({ mapbox: 'http://doesnotexist:9999' }), prog, cb);
+            done();
+        });
     });
     it('failed status', function(done) {
-        function cb(err, creds) {
+        upload.getcreds(opts({ mapbox: 'http://example.com' }), function cb(err, creds) {
             assert.equal('Invalid JSON returned from Mapbox API: Unexpected token <', err.message);
-            done && done() || (done = false);
-        };
-        var prog = progress();
-        prog.once('error', cb);
-        upload.getcreds(opts({ mapbox: 'http://example.com' }), prog, cb);
+            done();
+        });
     });
     it('failed badjson', function(done) {
-        function cb(err, creds) {
+        upload.getcreds(opts({ mapbox: 'http://localhost:3000/badjson' }), function cb(err, creds) {
             assert.equal('Invalid JSON returned from Mapbox API: Unexpected token h', err.message);
-            done && done() || (done = false);
-        };
-        var prog = progress();
-        prog.once('error', cb);
-        upload.getcreds(opts({ mapbox: 'http://localhost:3000/badjson' }), prog, cb);
+            done();
+        });
     });
     it('failed no key', function(done) {
-        function cb(err, creds) {
+        upload.getcreds(opts({ mapbox: 'http://localhost:3000/nokey' }), function cb(err, creds) {
             assert.equal('Invalid creds', err.message);
-            done && done() || (done = false);
-        };
-        var prog = progress();
-        prog.once('error', cb);
-        upload.getcreds(opts({ mapbox: 'http://localhost:3000/nokey' }), prog, cb);
+            done();
+        });
     });
     it('failed no bucket', function(done) {
-        function cb(err, creds) {
+        upload.getcreds(opts({ mapbox: 'http://localhost:3000/nobucket' }), function cb(err, creds) {
             assert.equal('Invalid creds', err.message);
-            done && done() || (done = false);
-        };
-        var prog = progress();
-        prog.once('error', cb);
-        upload.getcreds(opts({ mapbox: 'http://localhost:3000/nobucket' }), prog, cb);
+            done();
+        });
     });
     it('good creds', function(done) {
-        var prog = progress();
-        function cb(err, c){
+        upload.getcreds(opts(), function cb(err, c){
             assert.ifError(err);
             assert.equal(c.bucket, 'mapbox-upload-testing');
             var keys = Object.keys(c);
@@ -243,19 +227,15 @@ describe('upload.getcreds', function() {
             assert.ok(keys.indexOf('key') > -1);
             assert.ok(keys.indexOf('accessKeyId') > -1);
             assert.ok(keys.indexOf('secretAccessKey') > -1);
-            done && done() || (done = false);
-        };
-        upload.getcreds(opts(), prog, cb);
+            done();
+        });
     });
     it('bad creds', function(done) {
-        function cb(err) {
+        upload.getcreds(opts({ accesstoken: 'invalid' }), function cb(err) {
             assert.equal(404, err.code);
             assert.equal('Not found', err.message);
-            done && done() || (done = false);
-        };
-        var prog = progress();
-        prog.once('error', cb);
-        upload.getcreds(opts({ accesstoken: 'invalid' }), prog, cb);
+            done();
+        });
     });
 });
 
@@ -275,7 +255,7 @@ describe('upload.putfile', function() {
         };
         var prog = progress();
         prog.once('error', cb);
-        upload.putfile(opts(), {}, prog, cb);
+        upload.putfile(opts(), {}, prog);
     });
     it('failed no bucket', function(done) {
         function cb(err) {
@@ -290,8 +270,7 @@ describe('upload.putfile', function() {
         this.timeout(0);
         upload.testcreds(function(err, creds) {
             assert.ifError(err);
-            function check(err) {
-                assert.ifError(err);
+            function check() {
                 request.head({
                     uri: 'http://mapbox-upload-testing.s3.amazonaws.com/' + creds.key
                 }, function(err, res, body) {
@@ -304,7 +283,8 @@ describe('upload.putfile', function() {
                 });
             };
             var prog = progress();
-            upload.putfile(opts(), creds, prog, check);
+            prog.on('finished', check);
+            upload.putfile(opts(), creds, prog);
         });
     });
 });
@@ -319,27 +299,21 @@ describe('upload.createupload', function() {
         server.close(done);
     });
     it('failed no key', function(done) {
-        function cb(err) {
+        upload.createupload(opts(), {}, function cb(err) {
             assert.equal('"key" required in creds', err.message);
-            done && done() || (done = false);
-        };
-        var prog = progress();
-        prog.once('error', cb);
-        upload.createupload(opts(), {}, prog, cb);
+            done();
+        });
     });
     it('failed no bucket', function(done) {
-        function cb(err) {
+        upload.createupload(opts(), { key: '_pending' }, function cb(err) {
             assert.equal('"bucket" required in creds', err.message);
-            done && done() || (done = false);
-        };
-        var prog = progress();
-        prog.once('error', cb);
-        upload.createupload(opts(), { key: '_pending' }, prog, cb);
+            done();
+        });
     });
     it('good creds', function(done) {
         upload.testcreds(function(err, params) {
             assert.ifError(err);
-            function cb(err, body) {
+            upload.createupload(opts(), params, function cb(err, body) {
                 assert.ifError(err);
                 assert.deepEqual(body, {
                     id: 'd51e4a022c4eda48ce6d1932fda36189',
@@ -351,61 +325,37 @@ describe('upload.createupload', function() {
                     data: 'test.upload',
                     owner: 'test'
                 });
-                done && done() || (done = false);
-            };
-            var prog = progress();
-            prog.once('finished', function(body) {
-                assert.deepEqual(body, {
-                    id: 'd51e4a022c4eda48ce6d1932fda36189',
-                    progress: 0,
-                    complete: false,
-                    error: null,
-                    created: 1417114050065,
-                    modified: 1417114050065,
-                    data: 'test.upload',
-                    owner: 'test'
-                });
-                done && done() || (done = false);
+                done();
             });
-            upload.createupload(opts(), params, prog, cb);
         });
     });
     it('bad creds', function(done) {
         upload.testcreds(function(err, params) {
             assert.ifError(err);
-            function cb(err) {
+            upload.createupload(opts({accesstoken:'invalid'}), params, function cb(err) {
                 assert.equal(401, err.code);
                 assert.equal('Unauthorized', err.message);
-                done && done() || (done = false);
-            };
-            var prog = progress();
-            prog.on('error', cb);
-            upload.createupload(opts({accesstoken:'invalid'}), params, prog, cb);
+                done();
+            });
         });
     });
     it('error - valid json', function(done) {
         upload.testcreds(function(err, params) {
             assert.ifError(err);
-            function cb(err) {
+            upload.createupload(opts({mapbox: 'http://localhost:3000/errorvalidjson'}), params, function cb(err) {
                 assert.equal(400, err.code);
                 assert.equal('Bad Request', err.message);
-                done && done() || (done = false);
-            };
-            var prog = progress();
-            prog.on('error', cb);
-            upload.createupload(opts({mapbox: 'http://localhost:3000/errorvalidjson'}), params, prog, cb);
+                done();
+            });
         });
     });
     it('error - bad json', function(done) {
         upload.testcreds(function(err, params) {
             assert.ifError(err);
-            function cb(err) {
+            upload.createupload(opts({mapbox: 'http://localhost:3000/errorinvalidjson'}), params, function cb(err) {
                 assert.equal(err.message, 'Invalid JSON returned from Mapbox API: Unexpected token B');
-                done && done() || (done = false);
-            };
-            var prog = progress();
-            prog.on('error', cb);
-            upload.createupload(opts({mapbox: 'http://localhost:3000/errorinvalidjson'}), params, prog, cb);
+                done();
+            });
         });
     });
 });

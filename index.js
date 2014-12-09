@@ -17,9 +17,10 @@ function upload(opts) {
     var prog = progress({ time: 100 });
 
     try { opts = upload.opts(opts) }
-    catch(err) { return upload.error(err, prog) }
+    catch(err) { return prog.emit('error', err) }
 
-    upload.getcreds(opts, prog, function(err, c) {
+    upload.getcreds(opts, function(err, c) {
+        if (err) return prog.emit('error', err);
         var creds = c;
         upload.putfile(opts, creds, prog);
     });
@@ -44,59 +45,55 @@ upload.opts = function(opts) {
     return opts;
 };
 
-upload.error = function(err, prog) {
-    return prog.emit('error', err);
-};
-
-upload.getcreds = function(opts, prog, callback) {
+upload.getcreds = function(opts, callback) {
     try { opts = upload.opts(opts) }
-    catch(err) { return upload.error(err, prog) }
+    catch(err) { return callback(err) }
     request.get({
         uri: util.format('%s/uploads/v1/%s/credentials?access_token=%s', opts.mapbox, opts.account, opts.accesstoken),
         headers: { 'Host': url.parse(opts.mapbox).host },
         proxy: opts.proxy
     }, function(err, resp, body) {
-        if (err) return upload.error(err, prog);
+        if (err) return callback(err);
         try {
             body = JSON.parse(body);
         } catch(e) {
             var err = new Error('Invalid JSON returned from Mapbox API: ' + e.message);
-            return upload.error(err, prog);
+            return callback(err);
         }
         if (resp.statusCode !== 200) {
             var err = new Error(body && body.message || 'Mapbox is not available: ' + resp.statusCode);
             err.code = resp.statusCode;
-            return upload.error(err, prog);
+            return callback(err);
         }
         if (!body.key || !body.bucket) {
-            return upload.error(new Error('Invalid creds'), prog);
+            return callback(new Error('Invalid creds'));
         } else {
-            return callback && callback(null, body);
+            return callback(null, body);
         }
     });
 };
 
-upload.putfile = function(opts, creds, prog, callback) {
+upload.putfile = function(opts, creds, prog) {
     try { opts = upload.opts(opts) }
-    catch(err) { return upload.error(err, prog) }
+    catch(err) { return prog.emit('error', err) }
 
     if (!creds.key)
-        return upload.error(new Error('"key" required in creds'), prog);
+        return prog.emit('error', new Error('"key" required in creds'), prog);
     if (!creds.bucket)
-        return upload.error(new Error('"bucket" required in creds'), prog);
+        return prog.emit('error', new Error('"bucket" required in creds'), prog);
 
     if (opts.stream) {
-        if (!opts.stream instanceof stream) return upload.error(new Error('"stream" must be an stream object'), prog);
+        if (!opts.stream instanceof stream) return prog.emit('error', new Error('"stream" must be an stream object'), prog);
         var st = opts.stream;
 
         // if length isn't set progress-stream will not report progress
         if (opts.length) prog.setLength(opts.length)
         else st.on('length', prog.setLength);
     } else {
-        if (!opts.file || typeof opts.file != 'string') return upload.error(new Error('"file" must be an string'), prog);
+        if (!opts.file || typeof opts.file != 'string') return prog.emit('error', new Error('"file" must be an string'), prog);
         var st = fs.createReadStream(opts.file)
             .on('error', function(err) {
-                upload.error(err, prog);
+                prog.emit('error', err);
             });
         prog.setLength(fs.statSync(opts.file).size);
     }
@@ -119,29 +116,32 @@ upload.putfile = function(opts, creds, prog, callback) {
         Bucket: creds.bucket,
         Key: creds.key // Amazon S3 object name
     }, function(err, uploadStream) {
-        if (err) return upload.error(err, prog);
+        if (err) return prog.emit('error', err);
 
         uploadStream.on('error', function(e){
             e = new Error(e || 'Upload to Mapbox.com failed');
-            return upload.error(e, prog);
+            return prog.emit('error', e, prog);
         });
 
         uploadStream.on('uploaded', function (data) {
-            upload.createupload(opts, creds, prog, callback);
+            upload.createupload(opts, creds, function(err, body) {
+                if (err) return prog.emit('error', err);
+                prog.emit('finished', body);
+            });
         });
 
         st.pipe(prog).pipe(uploadStream);
     });
 };
 
-upload.createupload = function(opts, creds, prog, callback) {
+upload.createupload = function(opts, creds, callback) {
     try { opts = upload.opts(opts) }
-    catch(err) { return upload.error(err, prog) }
+    catch(err) { return callback(err) }
 
     if (!creds.key)
-        return upload.error(new Error('"key" required in creds'), prog);
+        return callback(new Error('"key" required in creds'));
     if (!creds.bucket)
-        return upload.error(new Error('"bucket" required in creds'), prog);
+        return callback(new Error('"bucket" required in creds'));
 
     var uri = util.format('%s/uploads/v1/%s?access_token=%s', opts.mapbox, opts.account, opts.accesstoken);
     var file = 'http://' + creds.bucket + '.s3.amazonaws.com/' + creds.key;
@@ -157,21 +157,20 @@ upload.createupload = function(opts, creds, prog, callback) {
             data: opts.mapid
         })
     }, function(err, res, body) {
-        if (err) return upload.error(err, prog);
+        if (err) return callback(err);
         try {
             body = JSON.parse(body);
         } catch(e) {
             var err = new Error('Invalid JSON returned from Mapbox API: ' + e.message);
-            return upload.error(err, prog);
+            return callback(err);
         }
         if (res.statusCode !== 201) {
             var err = new Error(body && body.message || body);
             err.code = res.statusCode;
-            return upload.error(err, prog);
+            return callback(err);
         }
 
-        prog.emit('finished', body);
-        return callback && callback(null, body);
+        return callback(null, body);
     });
 };
 
