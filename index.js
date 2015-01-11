@@ -16,8 +16,7 @@ module.exports = upload;
 function upload(opts) {
     var prog = progress({ time: 100 });
 
-    try { opts = upload.opts(opts) }
-    catch(err) { return prog.emit('error', err) }
+    opts = upload.opts(opts);
 
     upload.getcreds(opts, function(err, c) {
         if (err) return prog.emit('error', err);
