@@ -148,7 +148,7 @@ upload.createupload = function(url, opts, callback) {
         },
         body: JSON.stringify({
             url: url,
-            data: opts.mapid
+            dataset: opts.mapid
         })
     }, function(err, res, body) {
         if (err) return callback(err);

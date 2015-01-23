@@ -46,7 +46,7 @@ function Server() {
                     return error(res, 400, 'Invalid JSON in body');
                 }
 
-                var schema = ['url', 'data'];
+                var schema = ['url', 'dataset'];
                 for (var k in schema) if (!(schema[k] in body)) {
                     return error(res, 422, 'Missing property "' + schema[k] + '"');
                 }
@@ -60,9 +60,9 @@ function Server() {
                     progress: 0,
                     complete: false,
                     error: null,
-                    created: 1417114050065,
-                    modified: 1417114050065,
-                    data: body.data,
+                    created: '2014-11-27T18:47:30.065Z',
+                    modified: '2014-11-27T18:47:30.065Z',
+                    dataset: body.dataset,
                     owner: 'test'
                 }));
             });
@@ -309,9 +309,9 @@ describe('upload.createupload', function() {
                     progress: 0,
                     complete: false,
                     error: null,
-                    created: 1417114050065,
-                    modified: 1417114050065,
-                    data: 'test.upload',
+                    created: '2014-11-27T18:47:30.065Z',
+                    modified: '2014-11-27T18:47:30.065Z',
+                    dataset: 'test.upload',
                     owner: 'test'
                 });
                 done();
