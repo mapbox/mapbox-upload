@@ -31,7 +31,11 @@ If the request is successful, the token is working.
 npm install --save mapbox-upload
 ```
 
-## Usage
+## CLI Usage
+
+See [USAGE.txt](https://github.com/mapbox/mapbox-upload/blob/cli/USAGE.txt)
+
+## JavaScript Usage
 
 ```javascript
 var upload = require('mapbox-upload');
