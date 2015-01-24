@@ -27,6 +27,8 @@ function upload(opts) {
 }
 upload.MAPBOX = 'https://api.tiles.mapbox.com';
 
+if (process.env.MapboxAPI) upload.MAPBOX = process.env.MapboxAPI;
+
 upload.opts = function(opts) {
     opts = opts || {};
     opts.proxy = opts.proxy || process.env.HTTP_PROXY;
@@ -135,8 +137,21 @@ upload.putfile = function(opts, creds, prog) {
 };
 
 upload.createupload = function(url, opts, callback) {
-    try { opts = upload.opts(opts) }
-    catch(err) { return callback(err) }
+    try {
+        opts = opts || {};
+        opts.proxy = opts.proxy || process.env.HTTP_PROXY;
+        opts.mapbox = opts.mapbox || upload.MAPBOX;
+        if (!opts.account)
+            throw new Error('"account" option required');
+        if (!opts.accesstoken)
+            throw new Error('"accesstoken" option required');
+        if (!opts.mapid)
+            throw new Error('"mapid" option required');
+        if (opts.mapid.split('.')[0] !== opts.account)
+            throw new Error(util.format('Invalid mapid "%s" for account "%s"', opts.mapid, opts.account));
+    } catch(err) {
+        return callback(err)
+    }
 
     var uri = util.format('%s/uploads/v1/%s?access_token=%s', opts.mapbox, opts.account, opts.accesstoken);
 

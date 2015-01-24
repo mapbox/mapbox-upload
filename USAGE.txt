@@ -1,0 +1,9 @@
+usage: mapbox-upload <dataset> [<filepath> | <url>]
+
+  dataset      The id of the dataset (or map) to create or replace. Must contain
+    a dot (account.id).
+  file or url  Path to a local file or URL to a remote file on S3.
+
+Before running this command you must set a Mapbox access token to an environment
+variable named MapboxAccessToken. The access token must include the "uploads:write"
+scope. Learn more about access tokens at https://www.mapbox.com/developers/api/#access-tokens.
