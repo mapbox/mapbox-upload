@@ -4,14 +4,6 @@ mapbox-upload
 -------------
 Library for interfacing with the Mapbox upload API.
 
-## Disclaimer
-
-This software uses a private Mapbox API so:
-
-- Be sure know what you are doing
-- Contact support@mapbox.com before using it
-- Don't use for mission critical applications
-
 ## Authentication
 
 A Mapbox API token is required for authentication. Generate a **secret** token
