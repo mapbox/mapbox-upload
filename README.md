@@ -30,7 +30,7 @@ var upload = require('mapbox-upload');
 var progress = upload({
     file: __dirname + '/test.mbtiles', // Path to mbtiles file on disk.
     account: 'test', // Mapbox user account.
-    accesstoken: 'validtoken', // A valid Mapbox API secret token with the map:write scope enabled.
+    accesstoken: 'validtoken', // A valid Mapbox API secret token with the uploads:write scope enabled.
     mapid: 'test.upload' // The identifier of the map to create or update.
 });
 
