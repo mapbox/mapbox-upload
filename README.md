@@ -18,7 +18,7 @@ npm install --save mapbox-upload
 
 ## CLI Usage
 
-See [USAGE.txt](https://github.com/mapbox/mapbox-upload/blob/cli/USAGE.txt)
+See [USAGE.txt](https://github.com/mapbox/mapbox-upload/blob/master/USAGE.txt)
 
 ## JavaScript Usage
 
