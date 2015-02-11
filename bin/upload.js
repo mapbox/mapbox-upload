@@ -34,6 +34,8 @@ var options = {
     accesstoken: process.env.MapboxAccessToken
 };
 
+if (argv.patch) options.patch = true || false;
+
 if (filepath.indexOf('http') === 0) {
     upload.createupload(filepath, options, finish);
 } else {
