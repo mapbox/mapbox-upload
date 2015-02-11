@@ -4,26 +4,11 @@ mapbox-upload
 -------------
 Library for interfacing with the Mapbox upload API.
 
-## Disclaimer
-
-This software uses a private Mapbox API so:
-
-- Be sure know what you are doing
-- Contact support@mapbox.com before using it
-- Don't use for mission critical applications
-
 ## Authentication
 
 A Mapbox API token is required for authentication. Generate a **secret** token
-with the **map write** scope enabled by following
-[these steps](https://www.mapbox.com/help/create-api-access-token/). You can
-test the token by making a request like:
-
-```
-$ curl https://api.tiles.mapbox.com/uploads/v1/<your mapbox username>?access_token=<your access token>
-```
-
-If the request is successful, the token is working.
+with the `uploads:write` scope enabled by following
+[these steps](https://www.mapbox.com/help/create-api-access-token/).
 
 ## Install
 
@@ -31,7 +16,11 @@ If the request is successful, the token is working.
 npm install --save mapbox-upload
 ```
 
-## Usage
+## CLI Usage
+
+See [USAGE.txt](https://github.com/mapbox/mapbox-upload/blob/master/USAGE.txt)
+
+## JavaScript Usage
 
 ```javascript
 var upload = require('mapbox-upload');
@@ -41,7 +30,7 @@ var upload = require('mapbox-upload');
 var progress = upload({
     file: __dirname + '/test.mbtiles', // Path to mbtiles file on disk.
     account: 'test', // Mapbox user account.
-    accesstoken: 'validtoken', // A valid Mapbox API secret token with the map:write scope enabled.
+    accesstoken: 'validtoken', // A valid Mapbox API secret token with the uploads:write scope enabled.
     mapid: 'test.upload' // The identifier of the map to create or update.
 });
 
@@ -58,7 +47,6 @@ progress.once('finished', function(){
 });
 
 ```
-
 
 ### Options
 

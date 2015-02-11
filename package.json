@@ -1,6 +1,6 @@
 {
   "name": "mapbox-upload",
-  "version": "1.1.4",
+  "version": "3.0.0",
   "main": "./index.js",
   "description": "Integration with MapBox upload API.",
   "repository": {
@@ -13,10 +13,11 @@
     }
   ],
   "dependencies": {
+    "aws-sdk": "2.0.29",
+    "minimist": "^1.1.0",
     "progress-stream": "0.5.0",
     "request": "2.48.x",
-    "s3-upload-stream": "0.6.x",
-    "aws-sdk": "1.18.0"
+    "s3-upload-stream": "0.6.x"
   },
   "devDependencies": {
     "retire": "0.3.x",
@@ -24,6 +25,9 @@
   },
   "scripts": {
     "test": "retire -n && mocha -R spec"
+  },
+  "bin": {
+    "mapbox-upload": "./bin/upload.js"
   },
   "engines": {
     "node": "0.6.x || 0.8.x || 0.10.x"
