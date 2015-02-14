@@ -16,7 +16,7 @@
     "aws-sdk": "2.0.29",
     "minimist": "^1.1.0",
     "progress-stream": "0.5.0",
-    "request": "2.48.x",
+    "request": "^2.48.0",
     "s3-upload-stream": "0.6.x"
   },
   "devDependencies": {
