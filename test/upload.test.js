@@ -5,7 +5,6 @@ var progress = require('progress-stream');
 var request = require('request');
 var exec = require('child_process').exec;
 var upload = require(__dirname + '/../index.js');
-upload.MAPBOX = 'http://localhost:3000';
 
 var server;
 
@@ -15,7 +14,8 @@ function opts(extend) {
         file: __dirname + '/test.mbtiles',
         account: 'test',
         accesstoken: 'validtoken',
-        mapid: 'test.upload'
+        mapid: 'test.upload',
+        mapbox: 'http://localhost:3000'
     };
     for (var key in extend) options[key] = extend[key];
     return options;

@@ -25,12 +25,11 @@ function upload(opts) {
     });
     return prog;
 }
-upload.MAPBOX = 'https://api.tiles.mapbox.com';
 
 upload.opts = function(opts) {
     opts = opts || {};
     opts.proxy = opts.proxy || process.env.HTTP_PROXY;
-    opts.mapbox = opts.mapbox || upload.MAPBOX;
+    opts.mapbox = opts.mapbox || 'https://api.tiles.mapbox.com';
     if (!opts.file && !opts.stream)
         throw new Error('"file" or "stream" option required');
     if (!opts.account)
@@ -138,7 +137,6 @@ upload.createupload = function(url, opts, callback) {
     try {
         opts = opts || {};
         opts.proxy = opts.proxy || process.env.HTTP_PROXY;
-        opts.mapbox = opts.mapbox || upload.MAPBOX;
         if (!opts.account)
             throw new Error('"account" option required');
         if (!opts.accesstoken)
