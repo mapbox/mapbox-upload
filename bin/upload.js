@@ -5,6 +5,8 @@ var fs = require('fs');
 var util = require('util');
 var argv = require('minimist')(process.argv.slice(2));
 
+if (process.env.MapboxAPI) upload.MAPBOX = process.env.MapboxAPI;
+
 if (!process.env.MapboxAccessToken) {
     console.error('error: missing MapboxAccessToken in environment');
     console.error(fs.readFileSync(__dirname + '/../USAGE.txt', 'utf8'));
