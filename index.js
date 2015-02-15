@@ -29,7 +29,7 @@ function upload(opts) {
 upload.opts = function(opts) {
     opts = opts || {};
     opts.proxy = opts.proxy || process.env.HTTP_PROXY;
-    opts.mapbox = opts.mapbox || 'https://api.tiles.mapbox.com';
+    opts.api = opts.api || 'https://api.tiles.mapbox.com';
     if (!opts.file && !opts.stream)
         throw new Error('"file" or "stream" option required');
     if (!opts.account)
@@ -47,8 +47,8 @@ upload.getcreds = function(opts, callback) {
     try { opts = upload.opts(opts) }
     catch(err) { return callback(err) }
     request.get({
-        uri: util.format('%s/uploads/v1/%s/credentials?access_token=%s', opts.mapbox, opts.account, opts.accesstoken),
-        headers: { 'Host': url.parse(opts.mapbox).host },
+        uri: util.format('%s/uploads/v1/%s/credentials?access_token=%s', opts.api, opts.account, opts.accesstoken),
+        headers: { 'Host': url.parse(opts.api).host },
         proxy: opts.proxy
     }, function(err, resp, body) {
         if (err) return callback(err);
@@ -149,7 +149,7 @@ upload.createupload = function(url, opts, callback) {
         return callback(err)
     }
 
-    var uri = util.format('%s/uploads/v1/%s?access_token=%s', opts.mapbox, opts.account, opts.accesstoken);
+    var uri = util.format('%s/uploads/v1/%s?access_token=%s', opts.api, opts.account, opts.accesstoken);
 
     request.post({
         uri: uri,

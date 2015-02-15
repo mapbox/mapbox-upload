@@ -32,7 +32,7 @@ var options = {
     account: account,
     mapid: dataset,
     accesstoken: process.env.MapboxAccessToken,
-    mapbox: process.env.MapboxAPI,
+    api: process.env.MapboxAPI,
     patch: argv.patch || undefined
 };
 

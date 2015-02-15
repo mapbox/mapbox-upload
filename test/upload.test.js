@@ -15,7 +15,7 @@ function opts(extend) {
         account: 'test',
         accesstoken: 'validtoken',
         mapid: 'test.upload',
-        mapbox: 'http://localhost:3000'
+        api: 'http://localhost:3000'
     };
     for (var key in extend) options[key] = extend[key];
     return options;
@@ -161,35 +161,35 @@ test('upload from stream', function(t) {
 });
 
 test('upload.getcreds failed req', function(t) {
-    upload.getcreds(opts({ mapbox: 'http://doesnotexist:9999' }), function cb(err, creds) {
+    upload.getcreds(opts({ api: 'http://doesnotexist:9999' }), function cb(err, creds) {
         t.equal('getaddrinfo ENOTFOUND', err.message);
         t.end();
     });
 });
 
 test('upload.getcreds failed status', function(t) {
-    upload.getcreds(opts({ mapbox: 'http://example.com' }), function cb(err, creds) {
+    upload.getcreds(opts({ api: 'http://example.com' }), function cb(err, creds) {
         t.equal('Invalid JSON returned from Mapbox API: Unexpected token <', err.message);
         t.end();
     });
 });
 
 test('upload.getcreds failed badjson', function(t) {
-    upload.getcreds(opts({ mapbox: 'http://localhost:3000/badjson' }), function cb(err, creds) {
+    upload.getcreds(opts({ api: 'http://localhost:3000/badjson' }), function cb(err, creds) {
         t.equal('Invalid JSON returned from Mapbox API: Unexpected token h', err.message);
         t.end();
     });
 });
 
 test('upload.getcreds failed no key', function(t) {
-    upload.getcreds(opts({ mapbox: 'http://localhost:3000/nokey' }), function cb(err, creds) {
+    upload.getcreds(opts({ api: 'http://localhost:3000/nokey' }), function cb(err, creds) {
         t.equal('Invalid creds', err.message);
         t.end();
     });
 });
 
 test('upload.getcreds failed no bucket', function(t) {
-    upload.getcreds(opts({ mapbox: 'http://localhost:3000/nobucket' }), function cb(err, creds) {
+    upload.getcreds(opts({ api: 'http://localhost:3000/nobucket' }), function cb(err, creds) {
         t.equal('Invalid creds', err.message);
         t.end();
     });
@@ -294,7 +294,7 @@ test('upload.createupload error - valid json', function(t) {
     upload.testcreds(function(err, creds) {
         t.ifError(err);
         var url = 'http://' + creds.bucket + '.s3.amazonaws.com/' + creds.key;
-        upload.createupload(url, opts({mapbox: 'http://localhost:3000/errorvalidjson'}), function cb(err) {
+        upload.createupload(url, opts({api: 'http://localhost:3000/errorvalidjson'}), function cb(err) {
             t.equal(400, err.code);
             t.equal('Bad Request', err.message);
             t.end();
@@ -306,7 +306,7 @@ test('upload.createupload error - bad json', function(t) {
     upload.testcreds(function(err, creds) {
         t.ifError(err);
         var url = 'http://' + creds.bucket + '.s3.amazonaws.com/' + creds.key;
-        upload.createupload(url, opts({mapbox: 'http://localhost:3000/errorinvalidjson'}), function cb(err) {
+        upload.createupload(url, opts({api: 'http://localhost:3000/errorinvalidjson'}), function cb(err) {
             t.equal(err.message, 'Invalid JSON returned from Mapbox API: Unexpected token B');
             t.end();
         });
@@ -314,8 +314,8 @@ test('upload.createupload error - bad json', function(t) {
 });
 
 test('cli', function(t) {
-    var options = opts({mapbox: 'http://localhost:3000'});
-    process.env.MapboxAPI = options.mapbox;
+    var options = opts({api: 'http://localhost:3000'});
+    process.env.MapboxAPI = options.api;
     process.env.MapboxAccessToken = options.accesstoken;
     var proc = exec([__dirname + '/../bin/upload.js', options.mapid, options.file].join(' '), {
         env: process.env,
@@ -329,8 +329,8 @@ test('cli', function(t) {
 });
 
 test('cli - patch should fail', function(t) {
-    var options = opts({mapbox: 'http://localhost:3000'});
-    process.env.MapboxAPI = options.mapbox;
+    var options = opts({api: 'http://localhost:3000'});
+    process.env.MapboxAPI = options.api;
     process.env.MapboxAccessToken = options.accesstoken;
     var proc = exec([__dirname + '/../bin/upload.js', options.mapid, options.file, '--patch'].join(' '), {
         env: process.env,
