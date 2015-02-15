@@ -16,15 +16,15 @@
     "aws-sdk": "2.0.29",
     "minimist": "^1.1.0",
     "progress-stream": "0.5.0",
-    "request": "2.48.x",
+    "request": "^2.48.0",
     "s3-upload-stream": "0.6.x"
   },
   "devDependencies": {
     "retire": "0.3.x",
-    "mocha": "1.12.x"
+    "tape": "^3.5.0"
   },
   "scripts": {
-    "test": "retire -n && mocha -R spec"
+    "test": "retire -n && tape test/*.test.js"
   },
   "bin": {
     "mapbox-upload": "./bin/upload.js"
