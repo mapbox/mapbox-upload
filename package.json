@@ -21,10 +21,10 @@
   },
   "devDependencies": {
     "retire": "0.3.x",
-    "mocha": "1.12.x"
+    "tape": "^3.5.0"
   },
   "scripts": {
-    "test": "retire -n && mocha -R spec"
+    "test": "retire -n && tape test/test.js"
   },
   "bin": {
     "mapbox-upload": "./bin/upload.js"
