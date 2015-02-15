@@ -31,10 +31,9 @@ if (parts.length !== 2) {
 var options = {
     account: account,
     mapid: dataset,
-    accesstoken: process.env.MapboxAccessToken
+    accesstoken: process.env.MapboxAccessToken,
+    patch: argv.patch || undefined
 };
-
-options.patch = argv.patch || undefined;
 
 if (filepath.indexOf('http') === 0) {
     upload.createupload(filepath, options, finish);
