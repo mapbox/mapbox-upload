@@ -3,6 +3,7 @@ var http = require('http');
 var fs = require('fs');
 var progress = require('progress-stream');
 var request = require('request');
+var exec = require('child_process').exec;
 var upload = require(__dirname + '/../index.js');
 upload.MAPBOX = 'http://localhost:3000';
 
@@ -309,6 +310,36 @@ test('upload.createupload error - bad json', function(t) {
             t.equal(err.message, 'Invalid JSON returned from Mapbox API: Unexpected token B');
             t.end();
         });
+    });
+});
+
+test('cli', function(t) {
+    var options = opts({mapbox: 'http://localhost:3000'});
+    process.env.MapboxAPI = options.mapbox;
+    process.env.MapboxAccessToken = options.accesstoken;
+    var proc = exec([__dirname + '/../bin/upload.js', options.mapid, options.file].join(' '), {
+        env: process.env,
+        timeout: 2000
+    }, function(err, stdout, stderr) {
+        t.ifError(err);
+        console.log(stdout);
+        console.error(stderr);
+        t.end();
+    });
+});
+
+test('cli - patch should fail', function(t) {
+    var options = opts({mapbox: 'http://localhost:3000'});
+    process.env.MapboxAPI = options.mapbox;
+    process.env.MapboxAccessToken = options.accesstoken;
+    var proc = exec([__dirname + '/../bin/upload.js', options.mapid, options.file, '--patch'].join(' '), {
+        env: process.env,
+        timeout: 2000
+    }, function(err, stdout, stderr) {
+        console.log(stdout);
+        console.error(stderr);
+        t.equal('Command failed: \nError: Invalid property "patch"\n', err.message);
+        t.end();
     });
 });
 
