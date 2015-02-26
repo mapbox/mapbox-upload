@@ -10,17 +10,11 @@ A Mapbox API token is required for authentication. Generate a **secret** token
 with the `uploads:write` scope enabled by following
 [these steps](https://www.mapbox.com/help/create-api-access-token/).
 
-## Install
-
-```
-npm install --save mapbox-upload
-```
-
-## CLI Usage
-
-See [USAGE.txt](https://github.com/mapbox/mapbox-upload/blob/master/USAGE.txt)
-
 ## JavaScript Usage
+
+```
+$ npm install --save mapbox-upload
+```
 
 ```javascript
 var upload = require('mapbox-upload');
@@ -53,6 +47,16 @@ progress.once('finished', function(){
 #### stream
 A [`stream`](http://nodejs.org/api/stream.html) object can be passed in instead of `{file: filepath}`.
 `length` option is recommended for accurate progress-stream reporting. If length is unknown, it can be updated after upload has begun by emitting a `length` event from the `stream` object.
+
+## CLI Usage
+
+```
+$ npm install --global mapbox-upload
+$ export MapboxAccessToken=<access token with uploads:write scope enabled>
+$ mapbox-upload username.dataid /path/to/file
+```
+
+See also: [USAGE.txt](https://github.com/mapbox/mapbox-upload/blob/master/USAGE.txt)
 
 ## Tests
 
