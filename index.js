@@ -111,7 +111,6 @@ upload.putfile = function(opts, creds, prog) {
     var mpu = new mpuUploader({
         s3Client: client
     }, {
-        ACL: 'public-read',
         Bucket: creds.bucket,
         Key: creds.key
     }, function(err, uploadStream) {
