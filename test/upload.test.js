@@ -3,6 +3,7 @@ var http = require('http');
 var fs = require('fs');
 var progress = require('progress-stream');
 var request = require('request');
+var AWS = require('aws-sdk');
 var exec = require('child_process').exec;
 var upload = require(__dirname + '/../index.js');
 upload.MAPBOX = 'http://localhost:3000';
@@ -236,7 +237,7 @@ test('upload.putfile failed no bucket', function(t) {
     upload.putfile(opts(), { key: '_pending' }, prog, cb);
 });
 
-test('upload.putfile good creds (file)', function(t) {
+test('upload.putfile good creds (file) - file cannot be accessed by unauthenticated request', function(t) {
     upload.testcreds(function(err, creds) {
         t.ifError(err);
         function check() {
@@ -244,10 +245,66 @@ test('upload.putfile good creds (file)', function(t) {
                 uri: 'http://mapbox-upload-testing.s3.amazonaws.com/' + creds.key
             }, function(err, res, body) {
                 t.ifError(err);
-                t.equal(res.statusCode, 200);
-                t.equal('69632', res.headers['content-length']);
-                t.ok(+new Date(res.headers['last-modified']) > +new Date - 60e3);
+                t.equal(res.statusCode, 403);
                 prog.called = true;
+                t.end();
+            });
+        };
+        var prog = progress();
+        prog.on('finished', check);
+        upload.putfile(opts(), creds, prog);
+    });
+});
+
+test('upload.putfile good creds (file) - file can be accessed by authorized request', function(t) {
+    upload.testcreds(function(err, creds) {
+        t.ifError(err);
+        function check() {
+            var client = new AWS.S3({
+                accessKeyId: creds.accessKeyId,
+                secretAccessKey: creds.secretAccessKey,
+                sessionToken: creds.sessionToken,
+                region: 'us-east-1'
+            });
+
+            client.headObject({
+                Bucket: creds.bucket,
+                Key: creds.key
+            }, function(err, data) {
+                t.ifError(err);
+                t.equal('69632', data.ContentLength);
+                t.ok(+new Date(data.LastModified) > +new Date - 60e3);
+                prog.called = true;
+                t.end();
+            });
+        };
+        var prog = progress();
+        prog.on('finished', check);
+        upload.putfile(opts(), creds, prog);
+    });
+});
+
+test('upload.putfile good creds (file) - object has correct access ACL information', function(t) {
+    upload.testcreds(function(err, creds) {
+        t.ifError(err);
+        function check() {
+            var client = new AWS.S3({
+                accessKeyId: creds.accessKeyId,
+                secretAccessKey: creds.secretAccessKey,
+                sessionToken: creds.sessionToken,
+                region: 'us-east-1'
+            });
+
+            client.getObjectAcl({
+                Bucket: creds.bucket,
+                Key: creds.key
+            }, function(err, data) {
+                t.ifError(err);
+                var publicGrants = data.Grants.filter(function(grant) {
+                    return (grant.Permission === 'READ' && 
+                            grant.Grantee.URI === 'http://acs.amazonaws.com/groups/global/AllUsers');
+                });
+                t.equal(publicGrants.length, 0);
                 t.end();
             });
         };
