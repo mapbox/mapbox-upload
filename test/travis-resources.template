@@ -13,7 +13,9 @@
                                 {
                                     "Action": [
                                         "s3:PutObject",
-                                        "s3:PutObjectAcl"
+                                        "s3:PutObjectAcl",
+                                        "s3:GetObjectAcl",
+                                        "s3:HeadObject"
                                     ],
                                     "Effect": "Allow",
                                     "Resource": [
