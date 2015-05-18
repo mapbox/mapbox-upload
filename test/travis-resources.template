@@ -15,7 +15,7 @@
                                         "s3:PutObject",
                                         "s3:PutObjectAcl",
                                         "s3:GetObjectAcl",
-                                        "s3:HeadObject"
+                                        "s3:GetObject"
                                     ],
                                     "Effect": "Allow",
                                     "Resource": [
