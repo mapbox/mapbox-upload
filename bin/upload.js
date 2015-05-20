@@ -2,7 +2,6 @@
 
 var upload = require('..');
 var fs = require('fs');
-var util = require('util');
 var argv = require('minimist')(process.argv.slice(2));
 
 if (process.env.MapboxAPI) upload.MAPBOX = process.env.MapboxAPI;
@@ -45,10 +44,8 @@ if (filepath.indexOf('http') === 0) {
 
     var progress = upload(options);
 
-    progress.on('progress', function(progress) {
-        util.print(util.format('\r\033[KUploaded %s%',
-            Math.round(progress.percentage)
-        ));
+    progress.on('progress', function(status) {
+        console.log('Uploaded %s%', Math.round(status.percentage));
     });
     progress.on('error', function(err) {
         console.error('\nError: %s', err.message);
@@ -65,8 +62,7 @@ function finish(err, body) {
         console.error(err.message);
         process.exit(1);
     }
-    var uri = util.format('%s/uploads/v1/%s/%s?access_token=%s', upload.MAPBOX, account, body.id, process.env.MapboxAccessToken);
     console.log('Upload is now processing. Check status at https://www.mapbox.com/data/.');
-    console.log(uri);
+    console.log('%s/uploads/v1/%s/%s?access_token=%s', upload.MAPBOX, account, body.id, process.env.MapboxAccessToken);
     process.exit(0);
 }
