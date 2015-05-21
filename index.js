@@ -1,8 +1,6 @@
 var request = require('request');
 var crypto = require('crypto');
 var util = require('util');
-var path = require('path');
-var http = require('http');
 var url = require('url');
 var fs = require('fs');
 var progress = require('progress-stream');
@@ -86,10 +84,12 @@ upload.putfile = function(opts, creds, prog) {
         var st = opts.stream;
 
         // if length isn't set progress-stream will not report progress
-        if (opts.length) prog.setLength(opts.length)
+        if (opts.length) prog.setLength(opts.length);
         else st.on('length', prog.setLength);
     } else {
-        if (!opts.file || typeof opts.file != 'string') return prog.emit('error', new Error('"file" must be an string'), prog);
+        if (!opts.file || typeof opts.file !== 'string') {
+            return prog.emit('error', new Error('"file" must be an string'), prog);
+        }
         var st = fs.createReadStream(opts.file)
             .on('error', function(err) {
                 prog.emit('error', err);
@@ -147,7 +147,7 @@ upload.createupload = function(url, opts, callback) {
         if (opts.mapid.split('.')[0] !== opts.account)
             throw new Error(util.format('Invalid mapid "%s" for account "%s"', opts.mapid, opts.account));
     } catch(err) {
-        return callback(err)
+        return callback(err);
     }
 
     var uri = util.format('%s/uploads/v1/%s?access_token=%s', opts.mapbox, opts.account, opts.accesstoken);
