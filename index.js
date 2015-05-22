@@ -4,7 +4,7 @@ var util = require('util');
 var url = require('url');
 var fs = require('fs');
 var progress = require('progress-stream');
-var mpuUploader = require('s3-upload-stream').Uploader;
+var mpuUploader = require('s3-upload-stream');
 var AWS = require('aws-sdk');
 var stream = require('stream');
 
@@ -108,29 +108,25 @@ upload.putfile = function(opts, creds, prog) {
         region: 'us-east-1'
     });
     // Set up read for file and start the upload.
-    var mpu = new mpuUploader({
-        s3Client: client
-    }, {
+    var s3Stream = mpuUploader(client);
+    var uploadStream = s3Stream.upload({
         Bucket: creds.bucket,
         Key: creds.key
-    }, function(err, uploadStream) {
-        if (err) return prog.emit('error', err);
+    });
 
-        uploadStream.on('error', function(e){
+    st.pipe(prog)
+        .pipe(uploadStream)
+        .on('error', function(e){
             e = new Error(e || 'Upload to Mapbox.com failed');
             return prog.emit('error', e, prog);
-        });
-
-        uploadStream.on('uploaded', function (data) {
+        })
+        .on('uploaded', function (data) {
             var url = 'http://' + creds.bucket + '.s3.amazonaws.com/' + creds.key;
             upload.createupload(url, opts, function(err, body) {
                 if (err) return prog.emit('error', err);
                 prog.emit('finished', body);
             });
         });
-
-        st.pipe(prog).pipe(uploadStream);
-    });
 };
 
 upload.createupload = function(url, opts, callback) {
