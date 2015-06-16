@@ -48,7 +48,10 @@ progress.once('finished', function(){
 A [`stream`](http://nodejs.org/api/stream.html) object can be passed in instead of `{file: filepath}`.
 `length` option is recommended for accurate progress-stream reporting. If length is unknown, it can be updated after upload has begun by emitting a `length` event from the `stream` object.
 
+
 ## CLI Usage
+
+Using the CLI will also require [generating a secret token](https://www.mapbox.com/help/create-api-access-token/) with the `uploads:write` scope enabled.
 
 ```
 $ npm install --global mapbox-upload
@@ -56,7 +59,25 @@ $ export MapboxAccessToken=<access token with uploads:write scope enabled>
 $ mapbox-upload username.dataid /path/to/file
 ```
 
-See also: [USAGE.txt](https://github.com/mapbox/mapbox-upload/blob/master/USAGE.txt)
+CLI usage follows the following pattern:
+
+```
+mapbox-upload <dataset> [<filepath> | <url>]
+```
+
+- `dataset` refers to the id of the dataset or map being created or replaced.
+- `file` or `url` refers to either:
+  - a local file
+  - a remote file on S3
+
+**Creating** a new file might look like:
+
+```
+mapbox-upload <your-username>.create example.tif
+```
+
+**Updating** an existing file would look the same, except that you would pass
+in an existing `id`.
 
 ## Tests
 
