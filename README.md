@@ -1,4 +1,4 @@
-![travis](https://travis-ci.org/mapbox/mapbox-upload.svg)
+[![travis](https://travis-ci.org/mapbox/mapbox-upload.svg)](https://travis-ci.org/mapbox/mapbox-upload)
 
 mapbox-upload
 -------------
