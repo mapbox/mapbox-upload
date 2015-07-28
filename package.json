@@ -1,6 +1,6 @@
 {
   "name": "mapbox-upload",
-  "version": "3.2.0",
+  "version": "4.0.0",
   "main": "./index.js",
   "description": "Integration with MapBox upload API.",
   "repository": {
