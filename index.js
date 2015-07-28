@@ -156,7 +156,7 @@ upload.createupload = function(url, opts, callback) {
         },
         body: JSON.stringify({
             url: url,
-            dataset: opts.mapid,
+            tileset: opts.mapid,
             patch: opts.patch
         })
     }, function(err, res, body) {

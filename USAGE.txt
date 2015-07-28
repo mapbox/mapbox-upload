@@ -1,6 +1,6 @@
 usage: mapbox-upload <dataset> [<filepath> | <url>]
 
-  dataset      The id of the dataset (or map) to create or replace. Must contain
+  tileset      The id of the tileset (or map) to create or replace. Must contain
     a dot (account.id).
   file or url  Path to a local file or URL to a remote file on S3.
 
