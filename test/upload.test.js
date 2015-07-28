@@ -67,7 +67,7 @@ test('setup', function(t) {
                     return error(res, 400, 'Invalid JSON in body');
                 }
 
-                var schema = ['url', 'dataset'];
+                var schema = ['url', 'tileset'];
                 for (var k in schema) if (!(schema[k] in body)) {
                     return error(res, 422, 'Missing property "' + schema[k] + '"');
                 }
@@ -83,7 +83,7 @@ test('setup', function(t) {
                     error: null,
                     created: '2014-11-27T18:47:30.065Z',
                     modified: '2014-11-27T18:47:30.065Z',
-                    dataset: body.dataset,
+                    tileset: body.tileset,
                     owner: 'test'
                 }));
             });
@@ -327,7 +327,7 @@ test('upload.createupload good creds', function(t) {
                 error: null,
                 created: '2014-11-27T18:47:30.065Z',
                 modified: '2014-11-27T18:47:30.065Z',
-                dataset: 'test.upload',
+                tileset: 'test.upload',
                 owner: 'test'
             });
             t.end();
