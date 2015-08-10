@@ -29,11 +29,18 @@ if (parts.length !== 2) {
     process.exit(1);
 }
 
+if (argv.name === true) {
+    console.log('error: please provide a name string when using the --name flag');
+    console.error(fs.readFileSync(__dirname + '/../USAGE.txt', 'utf8'));
+    process.exit(1);
+}
+
 var options = {
     account: account,
     mapid: dataset,
     accesstoken: process.env.MapboxAccessToken,
-    patch: argv.patch || undefined
+    patch: argv.patch || undefined,
+    name: argv.name || ""
 };
 
 if (filepath.indexOf('http') === 0) {
