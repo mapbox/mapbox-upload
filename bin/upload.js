@@ -40,7 +40,7 @@ var options = {
     mapid: dataset,
     accesstoken: process.env.MapboxAccessToken,
     patch: argv.patch || undefined,
-    name: argv.name || ""
+    name: argv.name || undefined
 };
 
 if (filepath.indexOf('http') === 0) {

@@ -400,6 +400,19 @@ test('cli - patch should fail', function(t) {
     });
 });
 
+test('cli - empty name should fail', function(t) {
+    var options = opts({mapbox: 'http://localhost:3000'});
+    process.env.MapboxAPI = options.mapbox;
+    process.env.MapboxAccessToken = options.accesstoken;
+    var proc = exec([__dirname + '/../bin/upload.js', options.mapid, options.file, '--name'].join(' '), {
+        env: process.env,
+        timeout: 2000
+    }, function(err, stdout, stderr) {
+        t.ok(stdout.indexOf('please provide a name') !== -1);
+        t.end();
+    });
+});
+
 test('teardown', function(t) {
     server.close(t.end);
 });
