@@ -3,6 +3,7 @@
 var upload = require('..');
 var fs = require('fs');
 var argv = require('minimist')(process.argv.slice(2));
+var path = require('path');
 
 if (process.env.MapboxAPI) upload.MAPBOX = process.env.MapboxAPI;
 
@@ -40,7 +41,7 @@ var options = {
     mapid: dataset,
     accesstoken: process.env.MapboxAccessToken,
     patch: argv.patch || undefined,
-    name: argv.name || undefined
+    name: argv.name || path.basename(filepath, path.extname(filepath))
 };
 
 if (filepath.indexOf('http') === 0) {
