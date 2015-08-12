@@ -68,10 +68,11 @@ test('setup', function(t) {
                 }
 
                 var schema = ['url', 'tileset'];
+                var optional = ['name'];
                 for (var k in schema) if (!(schema[k] in body)) {
                     return error(res, 422, 'Missing property "' + schema[k] + '"');
                 }
-                for (var k in body) if (schema.indexOf(k) === -1) {
+                for (var k in body) if (schema.concat(optional).indexOf(k) === -1) {
                     return error(res, 422, 'Invalid property "' + k + '"');
                 }
 
@@ -385,7 +386,7 @@ test('cli', function(t) {
     });
 });
 
-test('cli - patch should fail', function(t) {
+test('cli - patch should fail since user doesnt have patch flag', function(t) {
     var options = opts({mapbox: 'http://localhost:3000'});
     process.env.MapboxAPI = options.mapbox;
     process.env.MapboxAccessToken = options.accesstoken;
@@ -396,6 +397,19 @@ test('cli - patch should fail', function(t) {
         console.log(stdout);
         console.error(stderr);
         t.equal('Command failed: \nError: Invalid property "patch"\n', err.message);
+        t.end();
+    });
+});
+
+test('cli - empty name should fail', function(t) {
+    var options = opts({mapbox: 'http://localhost:3000'});
+    process.env.MapboxAPI = options.mapbox;
+    process.env.MapboxAccessToken = options.accesstoken;
+    var proc = exec([__dirname + '/../bin/upload.js', options.mapid, options.file, '--name'].join(' '), {
+        env: process.env,
+        timeout: 2000
+    }, function(err, stdout, stderr) {
+        t.ok(stdout.indexOf('please provide a name') !== -1);
         t.end();
     });
 });

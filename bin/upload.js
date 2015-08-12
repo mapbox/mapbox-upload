@@ -3,6 +3,7 @@
 var upload = require('..');
 var fs = require('fs');
 var argv = require('minimist')(process.argv.slice(2));
+var path = require('path');
 
 if (process.env.MapboxAPI) upload.MAPBOX = process.env.MapboxAPI;
 
@@ -29,11 +30,18 @@ if (parts.length !== 2) {
     process.exit(1);
 }
 
+if (argv.name === true) {
+    console.log('error: please provide a name string when using the --name flag');
+    console.error(fs.readFileSync(__dirname + '/../USAGE.txt', 'utf8'));
+    process.exit(1);
+}
+
 var options = {
     account: account,
     mapid: dataset,
     accesstoken: process.env.MapboxAccessToken,
-    patch: argv.patch || undefined
+    patch: argv.patch || undefined,
+    name: argv.name || path.basename(filepath, path.extname(filepath))
 };
 
 if (filepath.indexOf('http') === 0) {
