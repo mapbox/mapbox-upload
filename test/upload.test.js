@@ -1,5 +1,6 @@
 var test = require('tape');
 var http = require('http');
+var url = require('url');
 var fs = require('fs');
 var progress = require('progress-stream');
 var request = require('request');
@@ -28,28 +29,56 @@ test('setup', function(t) {
         res.end(JSON.stringify({message:message}));
     }
 
+    var credsCache = {};
+
     server = http.createServer(function(req, res) {
-        switch (req.url) {
-        case '/badjson/uploads/v1/test/credentials?access_token=validtoken':
+        var uri = url.parse(req.url, true);
+        if (uri.query.access_token !== 'validtoken') {
+            if (req.method !== 'POST') {
+                return error(res, 404, 'Not found');
+            } else {
+                return error(res, 401, 'Unauthorized');
+            }
+        }
+
+        switch (uri.pathname) {
+        case '/badjson/uploads/v1/test/credentials':
             res.writeHead(200);
             res.end("hello world");
             break;
-        case '/nokey/uploads/v1/test/credentials?access_token=validtoken':
+        case '/nokey/uploads/v1/test/credentials':
             res.writeHead(200);
             res.end(JSON.stringify({bucket:'bar'}));
             break;
-        case '/nobucket/uploads/v1/test/credentials?access_token=validtoken':
+        case '/nobucket/uploads/v1/test/credentials':
             res.writeHead(200);
             res.end(JSON.stringify({key:'bar'}));
             break;
-        case '/uploads/v1/test/credentials?access_token=validtoken':
+        // Force a cached response. In practice this should be extremely
+        // difficult to reproduce because of the decache querystring.
+        case '/cached/uploads/v1/test/credentials':
             upload.testcreds(function(err, data) {
                 if (err) throw err;
-                res.writeHead(200);
+                res.writeHead(200, { 'X-Cache': 'Hit from cloudfront' });
                 res.end(JSON.stringify(data));
             });
             break;
-        case '/uploads/v1/test?access_token=validtoken':
+        // Simulates cloudfront cache. If a request using an entirely identical
+        // url is used will send identical response with cache hit header.
+        case '/uploads/v1/test/credentials':
+            if (credsCache[req.url]) {
+                res.writeHead(200, { 'X-Cache': 'Hit from cloudfront' });
+                res.end(JSON.stringify(credsCache[req.url]));
+            } else {
+                upload.testcreds(function(err, data) {
+                    if (err) throw err;
+                    credsCache[req.url] = data;
+                    res.writeHead(200, { 'X-Cache': 'Miss from cloudfront' });
+                    res.end(JSON.stringify(data));
+                });
+            }
+            break;
+        case '/uploads/v1/test':
             if (req.method !== 'POST') return error(res, 404, 'Not Found');
             if (!req.headers['content-type'] ||
                 req.headers['content-type'] !== 'application/json')
@@ -89,15 +118,11 @@ test('setup', function(t) {
                 }));
             });
             break;
-        case '/uploads/v1/test?access_token=invalid':
-            if (req.method !== 'POST') return error(res, 404, 'Not found');
-            error(res, 401, 'Unauthorized');
-            break;
-        case '/errorvalidjson/uploads/v1/test?access_token=validtoken':
+        case '/errorvalidjson/uploads/v1/test':
             if (req.method !== 'POST') return error(res, 404, 'Not found');
             error(res, 400, 'Bad Request');
             break;
-        case '/errorinvalidjson/uploads/v1/test?access_token=validtoken':
+        case '/errorinvalidjson/uploads/v1/test':
             if (req.method !== 'POST') return error(res, 404, 'Not found');
             res.writeHead(400);
             res.end('Bad Request');
@@ -197,16 +222,33 @@ test('upload.getcreds failed no bucket', function(t) {
     });
 });
 
-test('upload.getcreds good creds', function(t) {
-    upload.getcreds(opts(), function cb(err, c) {
-        t.ifError(err);
-        t.equal(c.bucket, 'mapbox-upload-testing');
-        var keys = Object.keys(c);
-        t.ok(keys.indexOf('bucket') > -1);
-        t.ok(keys.indexOf('key') > -1);
-        t.ok(keys.indexOf('accessKeyId') > -1);
-        t.ok(keys.indexOf('secretAccessKey') > -1);
+test('upload.getcreds failed cached response', function(t) {
+    upload.getcreds(opts({ mapbox: 'http://localhost:3000/cached' }), function cb(err, creds) {
+        t.equal('Received cached credentials, retry upload', err.message);
         t.end();
+    });
+});
+
+test('upload.getcreds good creds', function(t) {
+    upload.getcreds(opts(), function cb(err, a) {
+        t.ifError(err);
+        t.equal(a.bucket, 'mapbox-upload-testing');
+        t.equal(typeof a.bucket, 'string');
+        t.equal(typeof a.key, 'string');
+        t.equal(typeof a.accessKeyId, 'string');
+        t.equal(typeof a.secretAccessKey, 'string');
+
+        // Call getcreds again to ensure unique credentials on each call.
+        upload.getcreds(opts(), function cb(err, b) {
+            t.ifError(err);
+            t.equal(b.bucket, 'mapbox-upload-testing');
+            t.equal(typeof b.bucket, 'string');
+            t.equal(typeof b.key, 'string');
+            t.equal(typeof b.accessKeyId, 'string');
+            t.equal(typeof b.secretAccessKey, 'string');
+            t.ok(a.key !== b.key, 'unique creds.key between calls');
+            t.end();
+        });
     });
 });
 
