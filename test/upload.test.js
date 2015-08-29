@@ -233,13 +233,19 @@ test('upload.getcreds good creds', function(t) {
     upload.getcreds(opts(), function cb(err, a) {
         t.ifError(err);
         t.equal(a.bucket, 'mapbox-upload-testing');
-        t.deepEqual(Object.keys(a), ['bucket', 'key', 'accessKeyId', 'secretAccessKey', 'sessionToken']);
+        t.equal(typeof a.bucket, 'string');
+        t.equal(typeof a.key, 'string');
+        t.equal(typeof a.accessKeyId, 'string');
+        t.equal(typeof a.secretAccessKey, 'string');
 
         // Call getcreds again to ensure unique credentials on each call.
         upload.getcreds(opts(), function cb(err, b) {
             t.ifError(err);
             t.equal(b.bucket, 'mapbox-upload-testing');
-            t.deepEqual(Object.keys(b), ['bucket', 'key', 'accessKeyId', 'secretAccessKey', 'sessionToken']);
+            t.equal(typeof b.bucket, 'string');
+            t.equal(typeof b.key, 'string');
+            t.equal(typeof b.accessKeyId, 'string');
+            t.equal(typeof b.secretAccessKey, 'string');
             t.ok(a.key !== b.key, 'unique creds.key between calls');
             t.end();
         });
