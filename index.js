@@ -45,11 +45,22 @@ upload.opts = function(opts) {
 upload.getcreds = function(opts, callback) {
     try { opts = upload.opts(opts) }
     catch(err) { return callback(err) }
-    request.get({
-        uri: util.format('%s/uploads/v1/%s/credentials?access_token=%s', opts.mapbox, opts.account, opts.accesstoken),
-        headers: { 'Host': url.parse(opts.mapbox).host },
-        proxy: opts.proxy
-    }, function(err, resp, body) {
+
+    // Adds a randomized cache-busting query string. Credentials for an
+    // upload should always be unique and never used from cache.
+    crypto.pseudoRandomBytes(16, afterRandom);
+
+    function afterRandom(err, decache) {
+        if (err) return callback(err);
+        decache = decache.toString('hex');
+        request.get({
+            uri: util.format('%s/uploads/v1/%s/credentials?access_token=%s&decache=%s', opts.mapbox, opts.account, opts.accesstoken, decache),
+            headers: { 'Host': url.parse(opts.mapbox).host },
+            proxy: opts.proxy
+        }, afterRequest);
+    }
+
+    function afterRequest(err, resp, body) {
         if (err) return callback(err);
         try {
             body = JSON.parse(body);
@@ -64,10 +75,12 @@ upload.getcreds = function(opts, callback) {
         }
         if (!body.key || !body.bucket) {
             return callback(new Error('Invalid creds'));
+        } else if (resp.headers['x-cache'] === 'Hit from cloudfront') {
+            return callback(new Error('Received cached credentials, retry upload'));
         } else {
             return callback(null, body);
         }
-    });
+    }
 };
 
 upload.putfile = function(opts, creds, prog) {

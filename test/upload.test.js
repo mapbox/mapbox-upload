@@ -222,6 +222,13 @@ test('upload.getcreds failed no bucket', function(t) {
     });
 });
 
+test('upload.getcreds failed cached response', function(t) {
+    upload.getcreds(opts({ mapbox: 'http://localhost:3000/cached' }), function cb(err, creds) {
+        t.equal('Received cached credentials, retry upload', err.message);
+        t.end();
+    });
+});
+
 test('upload.getcreds good creds', function(t) {
     upload.getcreds(opts(), function cb(err, a) {
         t.ifError(err);
