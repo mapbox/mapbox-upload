@@ -1,5 +1,6 @@
 var test = require('tape');
 var http = require('http');
+var url = require('url');
 var fs = require('fs');
 var progress = require('progress-stream');
 var request = require('request');
@@ -29,27 +30,44 @@ test('setup', function(t) {
     }
 
     server = http.createServer(function(req, res) {
-        switch (req.url) {
-        case '/badjson/uploads/v1/test/credentials?access_token=validtoken':
+        var uri = url.parse(req.url, true);
+
+        if (uri.query.access_token !== 'validtoken') {
+            if (req.method !== 'POST') {
+                return error(res, 404, 'Not found');
+            } else {
+                return error(res, 401, 'Unauthorized');
+            }
+        }
+
+        switch (uri.pathname) {
+        case '/badjson/uploads/v1/test/credentials':
             res.writeHead(200);
             res.end("hello world");
             break;
-        case '/nokey/uploads/v1/test/credentials?access_token=validtoken':
+        case '/nokey/uploads/v1/test/credentials':
             res.writeHead(200);
             res.end(JSON.stringify({bucket:'bar'}));
             break;
-        case '/nobucket/uploads/v1/test/credentials?access_token=validtoken':
+        case '/nobucket/uploads/v1/test/credentials':
             res.writeHead(200);
             res.end(JSON.stringify({key:'bar'}));
             break;
-        case '/uploads/v1/test/credentials?access_token=validtoken':
+        case '/cached/uploads/v1/test/credentials':
             upload.testcreds(function(err, data) {
                 if (err) throw err;
-                res.writeHead(200);
+                res.writeHead(200, { 'X-Cache': 'Hit from cloudfront' });
                 res.end(JSON.stringify(data));
             });
             break;
-        case '/uploads/v1/test?access_token=validtoken':
+        case '/uploads/v1/test/credentials':
+            upload.testcreds(function(err, data) {
+                if (err) throw err;
+                res.writeHead(200, { 'X-Cache': 'Miss from cloudfront' });
+                res.end(JSON.stringify(data));
+            });
+            break;
+        case '/uploads/v1/test':
             if (req.method !== 'POST') return error(res, 404, 'Not Found');
             if (!req.headers['content-type'] ||
                 req.headers['content-type'] !== 'application/json')
@@ -89,15 +107,11 @@ test('setup', function(t) {
                 }));
             });
             break;
-        case '/uploads/v1/test?access_token=invalid':
-            if (req.method !== 'POST') return error(res, 404, 'Not found');
-            error(res, 401, 'Unauthorized');
-            break;
-        case '/errorvalidjson/uploads/v1/test?access_token=validtoken':
+        case '/errorvalidjson/uploads/v1/test':
             if (req.method !== 'POST') return error(res, 404, 'Not found');
             error(res, 400, 'Bad Request');
             break;
-        case '/errorinvalidjson/uploads/v1/test?access_token=validtoken':
+        case '/errorinvalidjson/uploads/v1/test':
             if (req.method !== 'POST') return error(res, 404, 'Not found');
             res.writeHead(400);
             res.end('Bad Request');
