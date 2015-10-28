@@ -126,7 +126,7 @@ upload.putfile = function(opts, creds, prog) {
         Bucket: creds.bucket,
         Key: creds.key
     });
-    uploadStream.maxPartSize(100e6); // 100 MB
+    uploadStream.maxPartSize(15e6);  // 15 MB
     uploadStream.concurrentParts(1); // at concurrency x1
 
     st.pipe(prog)
