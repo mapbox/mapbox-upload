@@ -4,7 +4,6 @@ var util = require('util');
 var url = require('url');
 var fs = require('fs');
 var progress = require('progress-stream');
-var mpuUploader = require('s3-upload-stream');
 var AWS = require('aws-sdk');
 var stream = require('stream');
 
@@ -65,11 +64,11 @@ upload.getcreds = function(opts, callback) {
         try {
             body = JSON.parse(body);
         } catch(e) {
-            var err = new Error('Invalid JSON returned from Mapbox API: ' + e.message);
+            err = new Error('Invalid JSON returned from Mapbox API: ' + e.message);
             return callback(err);
         }
         if (resp.statusCode !== 200) {
-            var err = new Error(body && body.message || 'Mapbox is not available: ' + resp.statusCode);
+            err = new Error(body && body.message || 'Mapbox is not available: ' + resp.statusCode);
             err.code = resp.statusCode;
             return callback(err);
         }
@@ -92,9 +91,10 @@ upload.putfile = function(opts, creds, prog) {
     if (!creds.bucket)
         return prog.emit('error', new Error('"bucket" required in creds'), prog);
 
+    var st;
     if (opts.stream) {
         if (!opts.stream instanceof stream) return prog.emit('error', new Error('"stream" must be an stream object'), prog);
-        var st = opts.stream;
+        st = opts.stream;
 
         // if length isn't set progress-stream will not report progress
         if (opts.length) prog.setLength(opts.length);
@@ -103,7 +103,7 @@ upload.putfile = function(opts, creds, prog) {
         if (!opts.file || typeof opts.file !== 'string') {
             return prog.emit('error', new Error('"file" must be an string'), prog);
         }
-        var st = fs.createReadStream(opts.file)
+        st = fs.createReadStream(opts.file)
             .on('error', function(err) {
                 prog.emit('error', err);
             });
@@ -120,26 +120,25 @@ upload.putfile = function(opts, creds, prog) {
         sessionToken: creds.sessionToken,
         region: 'us-east-1'
     });
-    // Set up read for file and start the upload.
-    var s3Stream = mpuUploader(client);
-    var uploadStream = s3Stream.upload({
+
+    var params = {
         Bucket: creds.bucket,
-        Key: creds.key
+        Key: creds.key,
+        Body: st.pipe(prog)
+    };
+    var options = { partSize: 15 * 1024 * 1024, queueSize: 1 };
+    var s3upload = client.upload(params, options).on('error', function(e){
+        e = new Error(e || 'Upload to Mapbox.com failed');
+        return prog.emit('error', e, prog);
     });
 
-    st.pipe(prog)
-        .pipe(uploadStream)
-        .on('error', function(e){
-            e = new Error(e || 'Upload to Mapbox.com failed');
-            return prog.emit('error', e, prog);
-        })
-        .on('uploaded', function (data) {
-            var url = 'http://' + creds.bucket + '.s3.amazonaws.com/' + creds.key;
-            upload.createupload(url, opts, function(err, body) {
-                if (err) return prog.emit('error', err);
-                prog.emit('finished', body);
-            });
+    s3upload.send(function() {
+        var url = 'http://' + creds.bucket + '.s3.amazonaws.com/' + creds.key;
+        upload.createupload(url, opts, function(err, body) {
+            if (err) return prog.emit('error', err);
+            prog.emit('finished', body);
         });
+    });
 };
 
 upload.createupload = function(url, opts, callback) {
@@ -178,11 +177,11 @@ upload.createupload = function(url, opts, callback) {
         try {
             body = JSON.parse(body);
         } catch(e) {
-            var err = new Error('Invalid JSON returned from Mapbox API: ' + e.message);
+            err = new Error('Invalid JSON returned from Mapbox API: ' + e.message);
             return callback(err);
         }
         if (res.statusCode !== 201) {
-            var err = new Error(body && body.message || body);
+            err = new Error(body && body.message || body);
             err.code = res.statusCode;
             return callback(err);
         }
@@ -201,7 +200,6 @@ upload.testcreds = function(callback) {
         return callback(new Error('env var AWS_ACCESS_KEY_ID required'));
     if (!process.env.AWS_SECRET_ACCESS_KEY)
         return callback(new Error('env var AWS_SECRET_ACCESS_KEY required'));
-    var sts = new AWS.STS({ region:'us-east-1' });
 
     callback(null, {
         bucket: 'mapbox-upload-testing',
