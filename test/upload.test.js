@@ -21,7 +21,7 @@ function opts(extend) {
     };
     for (var key in extend) options[key] = extend[key];
     return options;
-};
+}
 
 test('setup', function(t) {
     function error(res, statusCode, message) {
@@ -44,7 +44,7 @@ test('setup', function(t) {
         switch (uri.pathname) {
         case '/badjson/uploads/v1/test/credentials':
             res.writeHead(200);
-            res.end("hello world");
+            res.end('hello world');
             break;
         case '/nokey/uploads/v1/test/credentials':
             res.writeHead(200);
@@ -101,8 +101,8 @@ test('setup', function(t) {
                 for (var k in schema) if (!(schema[k] in body)) {
                     return error(res, 422, 'Missing property "' + schema[k] + '"');
                 }
-                for (var k in body) if (schema.concat(optional).indexOf(k) === -1) {
-                    return error(res, 422, 'Invalid property "' + k + '"');
+                for (var j in body) if (schema.concat(optional).indexOf(j) === -1) {
+                    return error(res, 422, 'Invalid property "' + j + '"');
                 }
 
                 res.writeHead(201);
@@ -188,42 +188,42 @@ test('upload from stream', function(t) {
 });
 
 test('upload.getcreds failed req', function(t) {
-    upload.getcreds(opts({ mapbox: 'http://doesnotexist:9999' }), function cb(err, creds) {
+    upload.getcreds(opts({ mapbox: 'http://doesnotexist:9999' }), function cb(err) {
         t.equal('getaddrinfo ENOTFOUND', err.message);
         t.end();
     });
 });
 
 test('upload.getcreds failed status', function(t) {
-    upload.getcreds(opts({ mapbox: 'http://example.com' }), function cb(err, creds) {
+    upload.getcreds(opts({ mapbox: 'http://example.com' }), function cb(err) {
         t.equal('Invalid JSON returned from Mapbox API: Unexpected token <', err.message);
         t.end();
     });
 });
 
 test('upload.getcreds failed badjson', function(t) {
-    upload.getcreds(opts({ mapbox: 'http://localhost:3000/badjson' }), function cb(err, creds) {
+    upload.getcreds(opts({ mapbox: 'http://localhost:3000/badjson' }), function cb(err) {
         t.equal('Invalid JSON returned from Mapbox API: Unexpected token h', err.message);
         t.end();
     });
 });
 
 test('upload.getcreds failed no key', function(t) {
-    upload.getcreds(opts({ mapbox: 'http://localhost:3000/nokey' }), function cb(err, creds) {
+    upload.getcreds(opts({ mapbox: 'http://localhost:3000/nokey' }), function cb(err) {
         t.equal('Invalid creds', err.message);
         t.end();
     });
 });
 
 test('upload.getcreds failed no bucket', function(t) {
-    upload.getcreds(opts({ mapbox: 'http://localhost:3000/nobucket' }), function cb(err, creds) {
+    upload.getcreds(opts({ mapbox: 'http://localhost:3000/nobucket' }), function cb(err) {
         t.equal('Invalid creds', err.message);
         t.end();
     });
 });
 
 test('upload.getcreds failed cached response', function(t) {
-    upload.getcreds(opts({ mapbox: 'http://localhost:3000/cached' }), function cb(err, creds) {
+    upload.getcreds(opts({ mapbox: 'http://localhost:3000/cached' }), function cb(err) {
         t.equal('Received cached credentials, retry upload', err.message);
         t.end();
     });
@@ -264,7 +264,7 @@ test('upload.putfile failed no key', function(t) {
     function cb(err) {
         t.equal('"key" required in creds', err.message);
         t.end();
-    };
+    }
     var prog = progress();
     prog.once('error', cb);
     upload.putfile(opts(), {}, prog);
@@ -274,7 +274,7 @@ test('upload.putfile failed no bucket', function(t) {
     function cb(err) {
         t.equal('"bucket" required in creds', err.message);
         t.end();
-    };
+    }
     var prog = progress();
     prog.once('error', cb);
     upload.putfile(opts(), { key: '_pending' }, prog, cb);
@@ -286,13 +286,13 @@ test('upload.putfile good creds (file) - file cannot be accessed by unauthentica
         function check() {
             request.head({
                 uri: 'http://mapbox-upload-testing.s3.amazonaws.com/' + creds.key
-            }, function(err, res, body) {
+            }, function(err, res) {
                 t.ifError(err);
                 t.equal(res.statusCode, 403);
                 prog.called = true;
                 t.end();
             });
-        };
+        }
         var prog = progress();
         prog.on('finished', check);
         upload.putfile(opts(), creds, prog);
@@ -320,7 +320,7 @@ test('upload.putfile good creds (file) - file can be accessed by authorized requ
                 prog.called = true;
                 t.end();
             });
-        };
+        }
         var prog = progress();
         prog.on('finished', check);
         upload.putfile(opts(), creds, prog);
@@ -344,13 +344,13 @@ test('upload.putfile good creds (file) - object has correct access ACL informati
             }, function(err, data) {
                 t.ifError(err);
                 var publicGrants = data.Grants.filter(function(grant) {
-                    return (grant.Permission === 'READ' && 
+                    return (grant.Permission === 'READ' &&
                             grant.Grantee.URI === 'http://acs.amazonaws.com/groups/global/AllUsers');
                 });
                 t.equal(publicGrants.length, 0);
                 t.end();
             });
-        };
+        }
         var prog = progress();
         prog.on('finished', check);
         upload.putfile(opts(), creds, prog);
@@ -417,7 +417,7 @@ test('cli', function(t) {
     var options = opts({mapbox: 'http://localhost:3000'});
     process.env.MapboxAPI = options.mapbox;
     process.env.MapboxAccessToken = options.accesstoken;
-    var proc = exec([__dirname + '/../bin/upload.js', options.mapid, options.file].join(' '), {
+    exec([__dirname + '/../bin/upload.js', options.mapid, options.file].join(' '), {
         env: process.env,
         timeout: 2000
     }, function(err, stdout, stderr) {
@@ -432,7 +432,7 @@ test('cli - patch should fail since user doesnt have patch flag', function(t) {
     var options = opts({mapbox: 'http://localhost:3000'});
     process.env.MapboxAPI = options.mapbox;
     process.env.MapboxAccessToken = options.accesstoken;
-    var proc = exec([__dirname + '/../bin/upload.js', options.mapid, options.file, '--patch'].join(' '), {
+    exec([__dirname + '/../bin/upload.js', options.mapid, options.file, '--patch'].join(' '), {
         env: process.env,
         timeout: 2000
     }, function(err, stdout, stderr) {
@@ -447,10 +447,10 @@ test('cli - empty name should fail', function(t) {
     var options = opts({mapbox: 'http://localhost:3000'});
     process.env.MapboxAPI = options.mapbox;
     process.env.MapboxAccessToken = options.accesstoken;
-    var proc = exec([__dirname + '/../bin/upload.js', options.mapid, options.file, '--name'].join(' '), {
+    exec([__dirname + '/../bin/upload.js', options.mapid, options.file, '--name'].join(' '), {
         env: process.env,
         timeout: 2000
-    }, function(err, stdout, stderr) {
+    }, function(err, stdout) {
         t.ok(stdout.indexOf('please provide a name') !== -1);
         t.end();
     });
