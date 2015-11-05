@@ -189,7 +189,7 @@ test('upload from stream', function(t) {
 
 test('upload.getcreds failed req', function(t) {
     upload.getcreds(opts({ mapbox: 'http://doesnotexist:9999' }), function cb(err) {
-        t.equal('getaddrinfo ENOTFOUND', err.message);
+        t.ok(/getaddrinfo ENOTFOUND/.test(err.message));
         t.end();
     });
 });
@@ -438,7 +438,7 @@ test('cli - patch should fail since user doesnt have patch flag', function(t) {
     }, function(err, stdout, stderr) {
         console.log(stdout);
         console.error(stderr);
-        t.equal('Command failed: \nError: Invalid property "patch"\n', err.message);
+        t.ok(/Error: Invalid property "patch"/.test(err.message));
         t.end();
     });
 });
