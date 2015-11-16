@@ -1,4 +1,4 @@
-usage: mapbox-upload <dataset> [<filepath> | <url>]
+usage: mapbox-upload <tileset> [<filepath> | <url>]
 
   tileset      The id of the tileset (or map) to create or replace. Must contain
     a dot (account.id).
