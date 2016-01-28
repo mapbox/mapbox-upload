@@ -17,3 +17,6 @@ install:
 
 script:
  - npm test
+
+after_success:
+ - if [[ ${TRAVIS_NODE_VERSION} == "0.10" ]]; then npm run coverage; fi;
