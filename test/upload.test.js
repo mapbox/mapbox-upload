@@ -136,7 +136,7 @@ test('setup', function(t) {
 });
 
 test('upload.opts', function(t) {
-    t.plan(6);
+    t.plan(7);
     t.throws(function() { upload.opts({}) }, /"file" or "stream" option required/);
     t.throws(function() { upload.opts({ file:'somepath' }) }, /"account" option required/);
     t.throws(function() { upload.opts({ file:'somepath', account:'test' }) }, /"accesstoken" option required/);
