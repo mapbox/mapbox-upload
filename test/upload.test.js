@@ -136,12 +136,13 @@ test('setup', function(t) {
 });
 
 test('upload.opts', function(t) {
-    t.plan(6);
+    t.plan(7);
     t.throws(function() { upload.opts({}) }, /"file" or "stream" option required/);
     t.throws(function() { upload.opts({ file:'somepath' }) }, /"account" option required/);
     t.throws(function() { upload.opts({ file:'somepath', account:'test' }) }, /"accesstoken" option required/);
     t.throws(function() { upload.opts({ file:'somepath', account:'test', accesstoken:'validtoken' }) }, /"mapid" option required/);
     t.throws(function() { upload.opts({ file:'somepath', account:'test', accesstoken:'validtoken', mapid:'wrong.account' }) }, / Invalid mapid "wrong.account" for account "test"/);
+    t.throws(function() { upload.opts({ file:'somepath', account:'test', accesstoken:'validtoken', mapid:'test.upload', name: '../../name.file' }) }, 'opts.name: invalid characters');
     t.doesNotThrow(function() { upload.opts({ file:'somepath', account:'test', accesstoken:'validtoken', mapid:'test.upload' }) });
 });
 
@@ -435,9 +436,7 @@ test('cli - patch should fail since user doesnt have patch flag', function(t) {
     exec([__dirname + '/../bin/upload.js', options.mapid, options.file, '--patch'].join(' '), {
         env: process.env,
         timeout: 2000
-    }, function(err, stdout, stderr) {
-        console.log(stdout);
-        console.error(stderr);
+    }, function(err) {
         t.ok(/Error: Invalid property "patch"/.test(err.message));
         t.end();
     });
@@ -452,6 +451,18 @@ test('cli - empty name should fail', function(t) {
         timeout: 2000
     }, function(err, stdout) {
         t.ok(stdout.indexOf('please provide a name') !== -1);
+        t.end();
+    });
+});
+
+test('cli - invalid characters --name should fail', function(t) {
+    var options = opts({mapbox: 'http://localhost:3000'});
+    process.env.MapboxAccessToken = options.accesstoken;
+    exec([__dirname + '/../bin/upload.js', options.mapid, options.file, '--name "../../file.geojson"'].join(' '), {
+        env: process.env,
+        timeout: 2000
+    }, function(err, stdout, stderr) {
+        t.ok(stderr.indexOf('contains invalid characters') !== -1, 'invalid characters');
         t.end();
     });
 });
