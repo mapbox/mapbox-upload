@@ -436,7 +436,7 @@ test('cli - patch should fail since user doesnt have patch flag', function(t) {
     exec([__dirname + '/../bin/upload.js', options.mapid, options.file, '--patch'].join(' '), {
         env: process.env,
         timeout: 2000
-    }, function(err, stdout, stderr) {
+    }, function(err) {
         t.ok(/Error: Invalid property "patch"/.test(err.message));
         t.end();
     });
