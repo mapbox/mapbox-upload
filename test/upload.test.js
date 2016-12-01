@@ -421,10 +421,8 @@ test('cli', function(t) {
     exec([__dirname + '/../bin/upload.js', options.mapid, options.file].join(' '), {
         env: process.env,
         timeout: 2000
-    }, function(err, stdout, stderr) {
+    }, function(err) {
         t.ifError(err);
-        console.log(stdout);
-        console.error(stderr);
         t.end();
     });
 });
@@ -463,6 +461,18 @@ test('cli - invalid characters --name should fail', function(t) {
         timeout: 2000
     }, function(err, stdout, stderr) {
         t.ok(stderr.indexOf('contains invalid characters') !== -1, 'invalid characters');
+        t.end();
+    });
+});
+
+test('cli - spaces in --name should not fail', function(t) {
+    var options = opts({mapbox: 'http://localhost:3000'});
+    process.env.MapboxAccessToken = options.accesstoken;
+    exec([__dirname + '/../bin/upload.js', options.mapid, options.file, '--name "space jam"'].join(' '), {
+        env: process.env,
+        timeout: 2000
+    }, function(err, stdout) {
+        t.ok(stdout.indexOf('Uploaded 100%') !== -1, 'allows spaces in name arg');
         t.end();
     });
 });

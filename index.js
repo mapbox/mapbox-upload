@@ -38,7 +38,7 @@ upload.opts = function(opts) {
         throw new Error('"mapid" option required');
     if (opts.mapid.split('.')[0] !== opts.account)
         throw new Error(util.format('Invalid mapid "%s" for account "%s"', opts.mapid, opts.account));
-    if (! /^([\w-.]+)$/.test(opts.name))
+    if (! /^([\w-. ]+)$/.test(opts.name))
         throw new Error('"name" contains invalid characters');
     return opts;
 };
