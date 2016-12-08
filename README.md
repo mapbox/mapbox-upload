@@ -25,7 +25,8 @@ var progress = upload({
     file: __dirname + '/test.mbtiles', // Path to mbtiles file on disk.
     account: 'test', // Mapbox user account.
     accesstoken: 'validtoken', // A valid Mapbox API secret token with the uploads:write scope enabled.
-    mapid: 'test.upload' // The identifier of the map to create or update.
+    mapid: 'test.upload', // The identifier of the map to create or update.
+    name: 'My upload' // Optional name to set, otherwise a default such as original.geojson will be used.
 });
 
 progress.on('error', function(err){
