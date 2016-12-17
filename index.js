@@ -15,11 +15,16 @@ function upload(opts) {
 
     opts = upload.opts(opts);
 
-    upload.getcreds(opts, function(err, c) {
+    upload.checkToken(opts, function(err) {
         if (err) return prog.emit('error', err);
-        var creds = c;
-        upload.putfile(opts, creds, prog);
+
+        upload.getcreds(opts, function(err, c) {
+            if (err) return prog.emit('error', err);
+            var creds = c;
+            upload.putfile(opts, creds, prog);
+        });
     });
+
     return prog;
 }
 upload.MAPBOX = 'https://api.mapbox.com';
@@ -178,6 +183,7 @@ upload.createupload = function(url, opts, callback) {
         })
     }, function(err, res, body) {
         if (err) return callback(err);
+
         try {
             body = JSON.parse(body);
         } catch(e) {
@@ -190,7 +196,31 @@ upload.createupload = function(url, opts, callback) {
             return callback(err);
         }
 
-        return callback(null, body);
+        return callback(null);
+    });
+};
+
+upload.checkToken = function(opts, callback) {
+    var uri = util.format('%s/uploads/v1/%s?access_token=%s', opts.mapbox, opts.account, opts.accesstoken);
+
+    request.get({
+        uri: uri
+    }, function(err, res, body) {
+        if (err) return callback(err);
+
+        try {
+            body = JSON.parse(body);
+        } catch (err) {
+            return callback(err);
+        }
+
+        if (body.message === 'Not Found') return callback(new Error('Invalid token. Your token must includ the uploads:write scope'));
+        var write = body.filter(function(scope) { return scope.id === 'uploads:write'; });
+        if (write.length > 0) {
+            return callback();
+        } else {
+            return callback(new Error('Invalid token. Your token must include the uploads:write scope.'));
+        }
     });
 };
 

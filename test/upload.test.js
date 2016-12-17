@@ -42,6 +42,10 @@ test('setup', function(t) {
         }
 
         switch (uri.pathname) {
+        case '/missingscope/uploads/v1/':
+            res.writeHead(200);
+            res.end('hello world');
+            break;
         case '/badjson/uploads/v1/test/credentials':
             res.writeHead(200);
             res.end('hello world');
@@ -140,6 +144,7 @@ test('upload.opts', function(t) {
     t.throws(function() { upload.opts({}) }, /"file" or "stream" option required/);
     t.throws(function() { upload.opts({ file:'somepath' }) }, /"account" option required/);
     t.throws(function() { upload.opts({ file:'somepath', account:'test' }) }, /"accesstoken" option required/);
+    t.throws(function() { upload.opts({ file:'somepath', account:'test', accesstoken:'tokenwithnoscope' }) }, /"accesstoken" is invalid/);
     t.throws(function() { upload.opts({ file:'somepath', account:'test', accesstoken:'validtoken' }) }, /"mapid" option required/);
     t.throws(function() { upload.opts({ file:'somepath', account:'test', accesstoken:'validtoken', mapid:'wrong.account' }) }, / Invalid mapid "wrong.account" for account "test"/);
     t.throws(function() { upload.opts({ file:'somepath', account:'test', accesstoken:'validtoken', mapid:'test.upload', name: '../../name.file' }) }, 'opts.name: invalid characters');
@@ -412,6 +417,13 @@ test('upload.createupload error - bad json', function(t) {
             t.equal(err.message, 'Invalid JSON returned from Mapbox API: Unexpected token B');
             t.end();
         });
+    });
+});
+
+test('upload.checkToken - valid token', function(t) {
+    upload.checkToken(function(err) {
+        t.ifError(err);
+        
     });
 });
 
