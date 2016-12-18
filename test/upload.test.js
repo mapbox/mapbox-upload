@@ -136,13 +136,14 @@ test('setup', function(t) {
 });
 
 test('upload.opts', function(t) {
-    t.plan(7);
+    t.plan(8);
     t.throws(function() { upload.opts({}) }, /"file" or "stream" option required/);
     t.throws(function() { upload.opts({ file:'somepath' }) }, /"account" option required/);
     t.throws(function() { upload.opts({ file:'somepath', account:'test' }) }, /"accesstoken" option required/);
     t.throws(function() { upload.opts({ file:'somepath', account:'test', accesstoken:'validtoken' }) }, /"mapid" option required/);
     t.throws(function() { upload.opts({ file:'somepath', account:'test', accesstoken:'validtoken', mapid:'wrong.account' }) }, / Invalid mapid "wrong.account" for account "test"/);
     t.throws(function() { upload.opts({ file:'somepath', account:'test', accesstoken:'validtoken', mapid:'test.upload', name: '../../name.file' }) }, 'opts.name: invalid characters');
+    t.throws(function() { upload.opts({ file:'somepath', account:'test', accesstoken:'validtoken', mapid:'test.upload', name: 'thisnameis65characterslooooooooooooooooooooooooooooooooooooooooog' }) }, 'opts.name: too long');
     t.doesNotThrow(function() { upload.opts({ file:'somepath', account:'test', accesstoken:'validtoken', mapid:'test.upload' }) });
 });
 

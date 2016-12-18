@@ -16,7 +16,7 @@
     "aws-sdk": "^2.2.12",
     "minimist": "^1.1.1",
     "progress-stream": "^1.1.1",
-    "request": "^2.55.0"
+    "request": "^2.79.0"
   },
   "devDependencies": {
     "eslint": "^1.7.3",

@@ -40,6 +40,8 @@ upload.opts = function(opts) {
         throw new Error(util.format('Invalid mapid "%s" for account "%s"', opts.mapid, opts.account));
     if (! /^([\w-. ]+)$/.test(opts.name))
         throw new Error('"name" contains invalid characters');
+    if (opts.name && opts.name.length > 64)
+        throw new Error('"name" can only be 64 characters long');
     return opts;
 };
 
