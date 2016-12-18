@@ -1,3 +1,7 @@
+### v4.2.4
+
+* validate name length before uploading [#64](https://github.com/mapbox/mapbox-upload/pull/64)
+
 ### v4.2.3
 
 * allow spaces in names [#61](https://github.com/mapbox/mapbox-upload/pull/61)
