@@ -1,5 +1,5 @@
 {
-  "name": "mapbox-upload",
+  "name": "@mapbox/mapbox-upload",
   "version": "4.2.4",
   "main": "./index.js",
   "description": "Integration with MapBox upload API.",
