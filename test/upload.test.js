@@ -198,14 +198,14 @@ test('upload.getcreds failed req', function(t) {
 
 test('upload.getcreds failed status', function(t) {
     upload.getcreds(opts({ mapbox: 'http://example.com' }), function cb(err) {
-        t.equal('Invalid JSON returned from Mapbox API: Unexpected token <', err.message);
+        t.ok(err.message.indexOf('Invalid JSON returned from Mapbox API: Unexpected token <') > -1);
         t.end();
     });
 });
 
 test('upload.getcreds failed badjson', function(t) {
     upload.getcreds(opts({ mapbox: 'http://localhost:3000/badjson' }), function cb(err) {
-        t.equal('Invalid JSON returned from Mapbox API: Unexpected token h', err.message);
+        t.ok(err.message.indexOf('Invalid JSON returned from Mapbox API: Unexpected token h') > -1);
         t.end();
     });
 });
@@ -409,7 +409,7 @@ test('upload.createupload error - bad json', function(t) {
         t.ifError(err);
         var url = 'http://' + creds.bucket + '.s3.amazonaws.com/' + creds.key;
         upload.createupload(url, opts({mapbox: 'http://localhost:3000/errorinvalidjson'}), function cb(err) {
-            t.equal(err.message, 'Invalid JSON returned from Mapbox API: Unexpected token B');
+            t.ok(err.message.indexOf('Invalid JSON returned from Mapbox API: Unexpected token B') > -1);
             t.end();
         });
     });
