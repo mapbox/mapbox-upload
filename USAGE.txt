@@ -1,8 +1,13 @@
-usage: mapbox-upload <tileset> [<filepath> | <url>]
+usage: mapbox-upload <tileset> [<filepath> | <url>] [--name tilesetname] [--patch]
 
   tileset      The id of the tileset (or map) to create or replace. Must contain
     a dot (account.id).
   file or url  Path to a local file or URL to a remote file on S3.
+
+  Options:
+
+  --name       Name for the data upload
+  --patch      Enable patch mode
 
 Before running this command you must set a Mapbox access token to an environment
 variable named MapboxAccessToken. The access token must include the "uploads:write"
