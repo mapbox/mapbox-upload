@@ -72,10 +72,15 @@ upload.getcreds = function(opts, callback) {
             return callback(err);
         }
         if (resp.statusCode !== 200) {
-            err = new Error(body && body.message || 'Mapbox is not available: ' + resp.statusCode);
+            if (body.message == 'Not Found') {
+                err = new Error('Invalid access token. Make sure your token has the uploads:write scope.');
+            } else {
+                err = new Error(body && body.message || 'Mapbox is not available: ' + resp.statusCode);
+            }
             err.code = resp.statusCode;
             return callback(err);
         }
+
         if (!body.key || !body.bucket) {
             return callback(new Error('Invalid creds'));
         } else if (resp.headers['x-cache'] === 'Hit from cloudfront') {
