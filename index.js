@@ -173,7 +173,8 @@ upload.createupload = function(url, opts, callback) {
         uri: uri,
         proxy: opts.proxy,
         headers: {
-            'Content-type': 'application/json'
+            'Content-type': 'application/json',
+            'User-Agent': 'mapbox-upload@' + require(__dirname + '/package.json').version
         },
         body: JSON.stringify({
             url: url,
