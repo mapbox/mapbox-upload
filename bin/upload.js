@@ -2,7 +2,10 @@
 
 var upload = require('..');
 var fs = require('fs');
-var argv = require('minimist')(process.argv.slice(2));
+var argv = require('minimist')(process.argv.slice(2), {
+    boolean: 'patch',
+    string: 'name'
+});
 var path = require('path');
 
 if (process.env.MapboxAPI) upload.MAPBOX = process.env.MapboxAPI;
@@ -30,7 +33,7 @@ if (parts.length !== 2) {
     process.exit(1);
 }
 
-if (argv.name === true) {
+if (argv.name === '') {
     console.log('error: please provide a name string when using the --name flag');
     console.error(fs.readFileSync(__dirname + '/../USAGE.txt', 'utf8'));
     process.exit(1);
