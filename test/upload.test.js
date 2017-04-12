@@ -317,7 +317,7 @@ test('upload.putfile good creds (file) - file can be accessed by authorized requ
                 Key: creds.key
             }, function(err, data) {
                 t.ifError(err);
-                t.equal('69632', data.ContentLength);
+                t.equal(69632, data.ContentLength);
                 t.ok(+new Date(data.LastModified) > +new Date - 60e3);
                 prog.called = true;
                 t.end();
