@@ -1,3 +1,9 @@
+### v4.3.0
+
+* :beetle: fix bug where the `--patch` flag wasn't be interpreted properly unless it was the last CLI argument, and added docs for the flags [#60](https://github.com/mapbox/mapbox-upload/issues/60)
+* added `mapbox-upload@<version>` to the `POST` requests sent to the Uploads API [#30](https://github.com/mapbox/mapbox-upload/issues/30)
+* Improved the error message for tokens without `uploads:write` scopes. Previously they returned a cryptic `Not Found` error message which wasn't very helpful [#27](https://github.com/mapbox/mapbox-upload/issues/27)
+
 ### v4.2.4
 
 * validate name length before uploading [#64](https://github.com/mapbox/mapbox-upload/pull/64)
