@@ -1,3 +1,7 @@
+### v4.3.1
+
+* Use the POST endpoint for upload credentials instead of GET
+
 ### v4.3.0
 
 * :beetle: fix bug where the `--patch` flag wasn't be interpreted properly unless it was the last CLI argument, and added docs for the flags [#60](https://github.com/mapbox/mapbox-upload/issues/60)
