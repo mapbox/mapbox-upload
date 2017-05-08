@@ -56,7 +56,7 @@ upload.getcreds = function(opts, callback) {
     function afterRandom(err, decache) {
         if (err) return callback(err);
         decache = decache.toString('hex');
-        request.get({
+        request.post({
             uri: util.format('%s/uploads/v1/%s/credentials?access_token=%s&decache=%s', opts.mapbox, opts.account, opts.accesstoken, decache),
             headers: { 'Host': url.parse(opts.mapbox).host },
             proxy: opts.proxy
