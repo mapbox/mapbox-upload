@@ -34,11 +34,7 @@ test('setup', function(t) {
     server = http.createServer(function(req, res) {
         var uri = url.parse(req.url, true);
         if (uri.query.access_token !== 'validtoken') {
-            if (req.method !== 'POST') {
-                return error(res, 404, 'Not found');
-            } else {
-                return error(res, 401, 'Unauthorized');
-            }
+            return error(res, 401, 'Unauthorized');
         }
 
         switch (uri.pathname) {
@@ -256,8 +252,8 @@ test('upload.getcreds good creds', function(t) {
 
 test('upload.getcreds bad creds', function(t) {
     upload.getcreds(opts({ accesstoken: 'invalid' }), function cb(err) {
-        t.equal(404, err.code);
-        t.equal('Not found', err.message);
+        t.equal(401, err.code);
+        t.equal('Unauthorized', err.message);
         t.end();
     });
 });
