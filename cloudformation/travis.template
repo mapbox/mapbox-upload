@@ -19,7 +19,7 @@
                                     ],
                                     "Effect": "Allow",
                                     "Resource": [
-                                        "arn:aws:s3:::mapbox-upload-testing/*"
+                                        "arn:aws:s3:::mapbox-upload-tests/*"
                                     ]
                                 }
                             ]
@@ -59,7 +59,7 @@
         },
         "SecretAccessKey": {
             "Value": {
-                "Fn::GetAtt": [ 
+                "Fn::GetAtt": [
                     "TestUserKey",
                     "SecretAccessKey"
                 ]

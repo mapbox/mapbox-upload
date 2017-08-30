@@ -230,7 +230,7 @@ test('upload.getcreds failed cached response', function(t) {
 test('upload.getcreds good creds', function(t) {
     upload.getcreds(opts(), function cb(err, a) {
         t.ifError(err);
-        t.equal(a.bucket, 'mapbox-upload-testing');
+        t.equal(a.bucket, 'mapbox-upload-tests');
         t.equal(typeof a.bucket, 'string');
         t.equal(typeof a.key, 'string');
         t.equal(typeof a.accessKeyId, 'string');
@@ -239,7 +239,7 @@ test('upload.getcreds good creds', function(t) {
         // Call getcreds again to ensure unique credentials on each call.
         upload.getcreds(opts(), function cb(err, b) {
             t.ifError(err);
-            t.equal(b.bucket, 'mapbox-upload-testing');
+            t.equal(b.bucket, 'mapbox-upload-tests');
             t.equal(typeof b.bucket, 'string');
             t.equal(typeof b.key, 'string');
             t.equal(typeof b.accessKeyId, 'string');
@@ -283,7 +283,7 @@ test('upload.putfile good creds (file) - file cannot be accessed by unauthentica
         t.ifError(err);
         function check() {
             request.head({
-                uri: 'http://mapbox-upload-testing.s3.amazonaws.com/' + creds.key
+                uri: 'http://mapbox-upload-tests.s3.amazonaws.com/' + creds.key
             }, function(err, res) {
                 t.ifError(err);
                 t.equal(res.statusCode, 403);
@@ -312,7 +312,7 @@ test('upload.putfile good creds (file) - file can be accessed by authorized requ
                 Bucket: creds.bucket,
                 Key: creds.key
             }, function(err, data) {
-                t.ifError(err);
+                t.ifError(err, 'there was no error');
                 t.equal(69632, data.ContentLength);
                 t.ok(+new Date(data.LastModified) > +new Date - 60e3);
                 prog.called = true;
