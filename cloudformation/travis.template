@@ -12,14 +12,12 @@
                             "Statement": [
                                 {
                                     "Action": [
-                                        "s3:PutObject",
-                                        "s3:PutObjectAcl",
                                         "s3:GetObjectAcl",
                                         "s3:GetObject"
                                     ],
                                     "Effect": "Allow",
                                     "Resource": [
-                                        "arn:aws:s3:::mapbox-upload-testing/*"
+                                        "arn:aws:s3:::mapbox-upload-tests/*"
                                     ]
                                 }
                             ]
@@ -59,7 +57,7 @@
         },
         "SecretAccessKey": {
             "Value": {
-                "Fn::GetAtt": [ 
+                "Fn::GetAtt": [
                     "TestUserKey",
                     "SecretAccessKey"
                 ]

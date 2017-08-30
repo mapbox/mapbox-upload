@@ -312,7 +312,7 @@ test('upload.putfile good creds (file) - file can be accessed by authorized requ
                 Bucket: creds.bucket,
                 Key: creds.key
             }, function(err, data) {
-                t.ifError(err);
+                t.ifError(err, 'there was no error');
                 t.equal(69632, data.ContentLength);
                 t.ok(+new Date(data.LastModified) > +new Date - 60e3);
                 prog.called = true;
