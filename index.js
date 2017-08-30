@@ -212,7 +212,7 @@ upload.testcreds = function(callback) {
         return callback(new Error('env var AWS_SECRET_ACCESS_KEY required'));
 
     callback(null, {
-        bucket: 'mapbox-upload-testing',
+        bucket: 'mapbox-upload-tests',
         key: key,
         accessKeyId: process.env.AWS_ACCESS_KEY_ID,
         secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
