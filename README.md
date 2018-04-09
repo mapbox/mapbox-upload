@@ -2,7 +2,9 @@
 
 mapbox-upload
 -------------
-Library for interfacing with the Mapbox upload API. For a more robust and up-to-date Mapbox CLI, we recommend using [mapbox-cli-py](https://github.com/mapbox/mapbox-cli-py), which provides access to uploads and other services.
+Library for interfacing with the Mapbox upload API. 
+
+:warning: This library is no longer accepting feature requests. For a more robust and up-to-date Mapbox CLI, we recommend using [mapbox-cli-py](https://github.com/mapbox/mapbox-cli-py), which provides access to uploads and other services.
 
 ## Authentication
 
