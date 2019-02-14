@@ -4,7 +4,7 @@ mapbox-upload
 -------------
 Library for interfacing with the Mapbox upload API. 
 
-:warning: This library is no longer accepting feature requests. For a more robust and up-to-date Mapbox CLI, we recommend using [mapbox-cli-py](https://github.com/mapbox/mapbox-cli-py), which provides access to uploads and other services.
+:warning: This library is no longer maintained or accepting feature requests. For a more robust and up-to-date Mapbox CLI, we recommend using [mapbox-cli-py](https://github.com/mapbox/mapbox-cli-py), which provides access to uploads and other services. If you're interested in a node.js interface, the [mapbox-sdk-js](https://github.com/mapbox/mapbox-sdk-js/blob/master/docs/services.md#uploads) uploader is your friend.
 
 ## Authentication
 
